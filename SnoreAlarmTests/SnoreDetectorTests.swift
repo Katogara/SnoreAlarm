@@ -470,6 +470,15 @@ final class WatchAlertTests: XCTestCase {
         defaults.set(false, forKey: AlarmSettings.Key.watchFallback)
         XCTAssertEqual(AlarmSettings.load(from: defaults).alertDevice, .watch)
         XCTAssertFalse(AlarmSettings.load(from: defaults).watchFallback)
+        defaults.set(AlertDevice.both.rawValue, forKey: AlarmSettings.Key.alertDevice)
+        XCTAssertEqual(AlarmSettings.load(from: defaults).alertDevice, .both)
+    }
+
+    /// 両方で知らせる設定でも Watch に通知を送る
+    func testBothUsesWatch() {
+        XCTAssertFalse(AlertDevice.iPhone.usesWatch)
+        XCTAssertTrue(AlertDevice.watch.usesWatch)
+        XCTAssertTrue(AlertDevice.both.usesWatch)
     }
 }
 
