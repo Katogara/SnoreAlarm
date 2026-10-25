@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 初回起動時の案内。いびきを知らせる端末 (iPhone / Apple Watch) を選ぶ。あとからメイン画面のスイッチで切り替えられる。
+/// 初回起動時の案内。いびきを知らせる端末 (iPhone / Apple Watch / 両方) を選ぶ。あとからメイン画面で切り替えられる。
 struct OnboardingView: View {
     @Environment(SnoreMonitor.self) private var monitor
     @AppStorage(AlarmSettings.Key.alertDevice) private var alertDevice = AlarmSettings.Default.alertDevice
@@ -13,7 +13,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("いびきアラームへようこそ")
                         .font(.title.bold())
-                    PhraseText("いびきが続いたときに、振動で知らせて寝返りを促します。どちらで知らせるかを選んでください。あとからメイン画面のスイッチで切り替えられます。")
+                    PhraseText("いびきが続いたときに、振動で知らせて寝返りを促します。どの端末で知らせるかを選んでください。あとからメイン画面で切り替えられます。")
                         .foregroundStyle(.secondary)
                 }
 
@@ -23,8 +23,11 @@ struct OnboardingView: View {
                              detail: "パートナーの睡眠を妨げない",
                              note: "Apple Watchのバージョンによっては動作が不安定になる事があります",
                              selection: $selection)
+                DeviceChoice(device: .both, symbol: "applewatch.radiowaves.left.and.right", title: "両方",
+                             detail: "Watch と iPhone を同時に振動。どちらかで止めると両方止まる",
+                             note: nil, selection: $selection)
 
-                if selection == .watch {
+                if selection?.usesWatch == true {
                     WatchSetupGuide()
                 }
 

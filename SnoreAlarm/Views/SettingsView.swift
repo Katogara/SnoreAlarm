@@ -68,7 +68,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Apple Watch")
                 } footer: {
-                    PhraseText("Apple Watch で知らせる設定のとき、Watch に通知を送ってから\(Int(WatchAlert.fallbackWindow / 60))分以内にまたいびきで振動の条件に達したら、Watch では起きなかったとみなして iPhone も振動させます。Watch に通知が届いたかどうかは iPhone から確かめられないためです。Watch などで「振動を止める」を押して止めたときは、起きたとみなして iPhone は振動させません。")
+                    PhraseText("Apple Watch で知らせる設定のとき、Watch に通知を送ってから\(Int(WatchAlert.fallbackWindow / 60))分以内にまたいびきで振動の条件に達したら、Watch では起きなかったとみなして iPhone も振動させます。Watch に通知が届いたかどうかは iPhone から確かめられないためです。Watch などで「振動を止める」を押して止めたときは、起きたとみなして iPhone は振動させません。両方で知らせる設定のときは、はじめから iPhone も振動します。")
                 }
 
                 Section {

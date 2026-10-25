@@ -129,7 +129,7 @@ struct ContentView: View {
     }
 }
 
-/// いびきを知らせる端末の切り替え (左が iPhone、右が Apple Watch)。監視中に切り替えても次のアラームから反映する。
+/// いびきを知らせる端末の切り替え (iPhone / Apple Watch / 両方)。監視中に切り替えても次のアラームから反映する。
 private struct AlertDeviceSection: View {
     @Environment(SnoreMonitor.self) private var monitor
     @AppStorage(AlarmSettings.Key.alertDevice) private var alertDevice = AlarmSettings.Default.alertDevice
@@ -137,22 +137,17 @@ private struct AlertDeviceSection: View {
 
     var body: some View {
         Section {
-            HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("知らせる端末")
-                Spacer()
-                Image(systemName: "iphone")
-                    .font(.title2)
-                    .foregroundStyle(alertDevice == .iPhone ? Color.accentColor : Color.secondary)
-                Toggle("Apple Watch で知らせる", isOn: Binding(
-                    get: { alertDevice == .watch },
-                    set: { alertDevice = $0 ? .watch : .iPhone }
-                ))
+                Picker("知らせる端末", selection: $alertDevice) {
+                    Text("iPhone").tag(AlertDevice.iPhone)
+                    Text("Apple Watch").tag(AlertDevice.watch)
+                    Text("両方").tag(AlertDevice.both)
+                }
+                .pickerStyle(.segmented)
                 .labelsHidden()
-                Image(systemName: "applewatch")
-                    .font(.title2)
-                    .foregroundStyle(alertDevice == .watch ? Color.accentColor : Color.secondary)
             }
-            if alertDevice == .watch && !monitor.isActive {
+            if alertDevice.usesWatch && !monitor.isActive {
                 Button {
                     showingWatchTest = true
                 } label: {
@@ -160,9 +155,13 @@ private struct AlertDeviceSection: View {
                 }
             }
         } footer: {
-            if alertDevice == .watch {
+            if alertDevice.usesWatch {
                 VStack(alignment: .leading, spacing: 4) {
-                    PhraseText("Apple Watch の振動で知らせます (パートナーの睡眠を妨げません)。iPhone の画面をロック (自動ロックで可) し、Watch を消音モードにして (音を出さず振動だけにするため) 着けたまま寝てください。寝る前に「Watch に届くかテスト」で確かめられます。")
+                    if alertDevice == .both {
+                        PhraseText("Apple Watch と iPhone の両方を振動させて知らせます。どちらかで止めると、両方の振動が止まります。iPhone の画面をロック (自動ロックで可) し、Watch を消音モードにして (音を出さず振動だけにするため) 着けたまま寝てください。寝る前に「Watch に届くかテスト」で確かめられます。")
+                    } else {
+                        PhraseText("Apple Watch の振動で知らせます (パートナーの睡眠を妨げません)。iPhone の画面をロック (自動ロックで可) し、Watch を消音モードにして (音を出さず振動だけにするため) 着けたまま寝てください。寝る前に「Watch に届くかテスト」で確かめられます。")
+                    }
                     ForEach(monitor.watchProblems, id: \.self) { problem in
                         PhraseText(problem.isBlocking
                              ? "⚠️ \(problem.message)ため、Watch には届きません (iPhone で振動します)"
@@ -291,7 +290,7 @@ private struct ControlButtons: View {
                 .controlSize(.large)
 
                 Button {
-                    if alertDevice == .watch {
+                    if alertDevice.usesWatch {
                         showingWatchDemo = true
                     } else {
                         startDemo()
