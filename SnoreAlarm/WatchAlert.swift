@@ -7,8 +7,13 @@ enum AlertDevice: String, CaseIterable, Identifiable {
     case iPhone = "iphone"
     /// Apple Watch の振動 (パートナーを起こさない)
     case watch
+    /// Apple Watch と iPhone の両方を同時に振動させる (どちらかで止めると両方止まる)
+    case both
 
     var id: String { rawValue }
+
+    /// Apple Watch に通知を送る設定か
+    var usesWatch: Bool { self != .iPhone }
 }
 
 /// Apple Watch で知らせる仕組み。

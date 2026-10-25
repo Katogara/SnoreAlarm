@@ -232,13 +232,15 @@ final class SnoreMonitor {
 
     /// 監視・デモの開始時に、どの端末で知らせるかと、Watch で知らせるうえでの問題をログに出す
     private func appendAlertDeviceStatus(notificationsAllowed: Bool) {
-        guard AlarmSettings.load().alertDevice == .watch else {
+        let device = AlarmSettings.load().alertDevice
+        guard device.usesWatch else {
             if !notificationsAllowed {
                 append(.info, "通知が許可されていないため、画面ロック中は振動だけで知らせます")
             }
             return
         }
-        append(.info, "Apple Watch で知らせます。iPhone の画面をロック (自動ロックで可) し、Watch を着けたままにしてください")
+        append(.info, (device == .both ? "Apple Watch と iPhone の両方で知らせます。" : "Apple Watch で知らせます。")
+               + "iPhone の画面をロック (自動ロックで可) し、Watch を着けたままにしてください")
         for problem in watchProblems {
             append(.info, problem.isBlocking
                    ? "\(problem.message)ため、Watch には届きません (iPhone で振動します)"
@@ -341,8 +343,8 @@ final class SnoreMonitor {
 
         // Watch で知らせる設定なら Watch に通知する。Watch に届くのは iPhone の画面がロックされているときだけなので、
         // いびきが始まるまでを長くして、画面をロックする時間をとる
-        let leadIn = DemoSignal.leadIn + (settings.alertDevice == .watch ? Self.watchTestDelay : 0)
-        if settings.alertDevice == .watch {
+        let leadIn = DemoSignal.leadIn + (settings.alertDevice.usesWatch ? Self.watchTestDelay : 0)
+        if settings.alertDevice.usesWatch {
             append(.info, "Apple Watch で知らせるデモです。すぐに iPhone の画面をロックしてください (画面が点いていると iPhone で振動します)")
         }
         let frames = DemoSignal.frames(for: settings, leadIn: leadIn)
@@ -669,8 +671,10 @@ final class SnoreMonitor {
         let title = isDemo ? "[デモ] いびきを検知しました" : "いびきを検知しました"
         let detected = "\(settings.windowSeconds)秒以内に\(count)回のいびきを検知しました。"
         // 知らせる端末は監視中に切り替えても次のアラームから反映する
-        if AlarmSettings.load().alertDevice == .watch {
-            alertWithWatch(duration: duration, title: title, body: detected + "寝返りを打ってください。")
+        let device = AlarmSettings.load().alertDevice
+        if device.usesWatch {
+            alertWithWatch(duration: duration, title: title, body: detected + "寝返りを打ってください。",
+                           alsoIPhone: device == .both)
             return
         }
         recordAlarm(.iPhone)
@@ -687,18 +691,23 @@ final class SnoreMonitor {
     }
 
     /// Apple Watch で知らせる (`WatchAlert`)。届かないと分かっているときは iPhone で振動する。
-    private func alertWithWatch(duration: TimeInterval, title: String, body: String) {
+    /// - Parameter alsoIPhone: iPhone も同時に振動させる (両方で知らせる設定)。どちらの通知や画面で止めても両方止まる
+    private func alertWithWatch(duration: TimeInterval, title: String, body: String, alsoIPhone: Bool = false) {
         let prefix = isDemo ? "[デモ] " : ""
         if !isInBackground {
             // iPhone の画面が点いているあいだは、通知が Watch に転送されない
-            iPhoneFallbackCount += 1
+            if !alsoIPhone {
+                iPhoneFallbackCount += 1
+            }
             append(.info, prefix + "画面を表示中のため iPhone で振動しました (Watch に届くのは iPhone の画面がロックされているときだけです)")
             recordAlarm(.iPhone)
             vibrateIPhone(duration: duration)
             return
         }
         if let issue = watchProblems.first(where: \.isBlocking) {
-            iPhoneFallbackCount += 1
+            if !alsoIPhone {
+                iPhoneFallbackCount += 1
+            }
             append(.info, prefix + "\(issue.message)ため、iPhone で振動しました")
             recordAlarm(.iPhone)
             vibrateIPhone(duration: duration)
@@ -706,7 +715,11 @@ final class SnoreMonitor {
         }
 
         let now = Date()
-        if settings.watchFallback && WatchAlert.needsFallback(lastWatchAlarm: lastWatchAlarmAt, now: now) {
+        if alsoIPhone {
+            append(.info, prefix + "iPhone を振動させました")
+            recordAlarm(.both)
+            vibrator.start(duration: duration)
+        } else if settings.watchFallback && WatchAlert.needsFallback(lastWatchAlarm: lastWatchAlarmAt, now: now) {
             iPhoneFallbackCount += 1
             append(.info, prefix + "Watch で知らせたあともいびきが続いたため、iPhone も振動させました")
             recordAlarm(.both)
@@ -753,7 +766,7 @@ final class SnoreMonitor {
 
     /// 知らせる端末を選んだときに呼ぶ。Watch なら通知の許可を求めてから (Watch には通知で知らせるため)、状態を調べ直す。
     func prepareAlerts() async {
-        if AlarmSettings.load().alertDevice == .watch {
+        if AlarmSettings.load().alertDevice.usesWatch {
             _ = await notifier.requestAuthorization()
         }
         await refreshWatchReadiness()
@@ -761,7 +774,7 @@ final class SnoreMonitor {
 
     /// Apple Watch で知らせられるかを調べ直す。Watch を選んだとき・アプリを開いたとき・監視を始めるときに呼ぶ。
     func refreshWatchReadiness() async {
-        guard AlarmSettings.load().alertDevice == .watch else {
+        guard AlarmSettings.load().alertDevice.usesWatch else {
             watchProblems = []
             return
         }
