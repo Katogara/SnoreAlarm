@@ -1,4 +1,5 @@
 import AVFoundation
+import LocalAuthentication
 import Observation
 import UIKit
 
@@ -100,6 +101,14 @@ final class SnoreMonitor {
     /// 画面に表示されていない (ロック中・他のアプリを使用中など)
     private var isInBackground: Bool {
         UIApplication.shared.applicationState != .active
+    }
+
+    /// 画面に表示されていないが、iPhone の画面は点いている (他のアプリを使用中)。
+    /// パスコードを設定していると、ロックしてから 10 秒ほどで保護データが使えなくなるので、それで見分ける。
+    /// パスコードがないと見分けられないため、ロック中とみなす
+    private var isUsingOtherApp: Bool {
+        guard isInBackground, UIApplication.shared.isProtectedDataAvailable else { return false }
+        return LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
     }
 
     // MARK: - 開始 / 停止
@@ -537,7 +546,7 @@ final class SnoreMonitor {
         processor?.resetLongestGap()
     }
 
-    /// 画面に戻ったとき、見えていなかった間の様子をログに出し、マイクが止まっていれば再開する
+    /// 画面に戻ったとき、ロック中・他のアプリを使用中だった間の様子をログに出し、マイクが止まっていれば再開する
     private func willEnterForeground() {
         processor?.setReportsLevels(true)
         guard state != .idle, !isDemo else { return }
@@ -555,7 +564,7 @@ final class SnoreMonitor {
                 } else {
                     input = "マイク入力は正常"
                 }
-                append(.info, "画面が見えていなかった\(span)間: いびき\(snoreCount - snoreCountAtBackground)回を検知 (\(input))")
+                append(.info, "画面をロック中・ほかのアプリを使用中だった\(span)間: いびき\(snoreCount - snoreCountAtBackground)回を検知 (\(input))")
             }
         }
         backgroundSince = nil
@@ -674,6 +683,7 @@ final class SnoreMonitor {
         let device = AlarmSettings.load().alertDevice
         if device.usesWatch {
             alertWithWatch(duration: duration, title: title, body: detected + "寝返りを打ってください。",
+                           iPhoneBody: detected + "\(settings.vibrationSeconds)秒間振動します。",
                            alsoIPhone: device == .both)
             return
         }
@@ -691,17 +701,25 @@ final class SnoreMonitor {
     }
 
     /// Apple Watch で知らせる (`WatchAlert`)。届かないと分かっているときは iPhone で振動する。
-    /// - Parameter alsoIPhone: iPhone も同時に振動させる (両方で知らせる設定)。どちらの通知や画面で止めても両方止まる
-    private func alertWithWatch(duration: TimeInterval, title: String, body: String, alsoIPhone: Bool = false) {
+    /// - Parameters:
+    ///   - iPhoneBody: Watch に届かず、他のアプリを使用中に iPhone で振動するときの通知の本文
+    ///   - alsoIPhone: iPhone も同時に振動させる (両方で知らせる設定)。どちらの通知や画面で止めても両方止まる
+    private func alertWithWatch(duration: TimeInterval, title: String, body: String, iPhoneBody: String,
+                                alsoIPhone: Bool = false) {
         let prefix = isDemo ? "[デモ] " : ""
-        if !isInBackground {
+        let usingOtherApp = isUsingOtherApp
+        if !isInBackground || usingOtherApp {
             // iPhone の画面が点いているあいだは、通知が Watch に転送されない
             if !alsoIPhone {
                 iPhoneFallbackCount += 1
             }
-            append(.info, prefix + "画面を表示中のため iPhone で振動しました (Watch に届くのは iPhone の画面がロックされているときだけです)")
+            let reason = usingOtherApp ? "ほかのアプリを使用中" : "画面を表示中"
+            append(.info, prefix + "\(reason)のため iPhone で振動しました (Watch に届くのは iPhone の画面がロックされているときだけです)")
             recordAlarm(.iPhone)
             vibrateIPhone(duration: duration)
+            if usingOtherApp {
+                notifier.notify(title: title, body: iPhoneBody, stoppable: true)
+            }
             return
         }
         if let issue = watchProblems.first(where: \.isBlocking) {
