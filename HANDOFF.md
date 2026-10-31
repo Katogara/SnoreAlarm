@@ -92,6 +92,7 @@
 - サウンドなしの通知 (`sound = nil`) は Watch に転送されず、iPhone のロック画面にだけ出る (実機で確認)。通知にはサウンドが必要
 - 消音モードの Watch でも、テストの通知・実際のいびきとも振動することを実機で確認 (一度振動しなかった報告があったが、再テストでは振動した。Watch の「触覚による通知」がオンであることが前提)
 - 届いたかは確かめられないので: (1) 届かないと分かっているとき (画面表示中・未ペアリング・通知未許可) は iPhone で振動 (2) Watch で知らせてから 5 分以内に再びアラームになったら iPhone も振動 (`watchFallback`、既定オン) (3) Watch への通知回数と代わりの iPhone 振動の回数を今回の記録に表示 (4) メイン画面の「Watch に届くかテスト」(5 秒後に通知)
+- 他のアプリを使用中 (アプリはバックグラウンドだが iPhone の画面は点いている) も Watch に転送されないので、iPhone で振動し「振動を止める」付きの通知を出す (2026-10-31 追加、実機未確認)。ロック中との見分けは `isProtectedDataAvailable` (パスコードありの端末で、ロックの約 10 秒後に false になる)。パスコードがない端末は見分けられないためロック中とみなす (`isUsingOtherApp`)
 - ペアリングの確認は `WCSession.isPaired` (Watch アプリがなくても分かる)。通知の許可とサウンドは `notificationSettings()`。アプリが前面に来たとき・端末を切り替えたとき・監視の開始時に調べ直す
 - 集中モードを抜ける `timeSensitive` は entitlement が必要なため使っていない。集中モードの許可 App に加えてもらう案内にしている
 - **実機未確認**: 転送で振動するか、3 秒おきの通知が毎回振動するか、集中モード中の挙動、Watch のモデル・watchOS による差
@@ -99,7 +100,7 @@
 ### 中断からの復帰
 
 - 電話などの中断、入力の変更 (イヤホンの抜き差し)、オーディオのリセットのあとは自動でマイクを再開する
-- 中断の終了の知らせが来ない場合に備え、監視中は 5 秒おきにマイク入力が来ているかを確かめ、10 秒途切れていたら再開を試み続ける (`checkInput`)。画面に戻ったとき、見えていなかった間のいびきの回数と入力の途切れをログに出す
+- 中断の終了の知らせが来ない場合に備え、監視中は 5 秒おきにマイク入力が来ているかを確かめ、10 秒途切れていたら再開を試み続ける (`checkInput`)。画面に戻ったとき、ロック中・他のアプリを使用中だった間のいびきの回数と入力の途切れをログに出す (「画面をロック中・ほかのアプリを使用中だった◯分間: …」)
 - 監視中は 5 分おきに `MonitoringSessionStore.touch` で「動いていた時刻」を残し、アプリが終了しても一晩の記録で監視時間を出せるようにする
 
 ### 日本語の改行 (`PhraseText`)
@@ -133,7 +134,7 @@
 | `SnoreAlarm/Audio/SnoreRecorder.swift`, `SampleRingBuffer.swift` | 直近 6 秒の音の保持といびき区間の切り出し |
 | `SnoreAlarm/Views/RecordingsView.swift` | 録音一覧 (直近 1 週間) と再生ボタン |
 | `SnoreAlarm/Waveform.swift`, `SnoreAlarm/Views/WaveformView.swift` | 再生時の波形 (時間 × 録音したままの音量) |
-| `SnoreAlarm/WatchAlert.swift` | 知らせる端末 (`AlertDevice`)、Watch への通知の間隔と iPhone への切り替えの判定、Watch のペアリング確認 (`WatchLink`) |
+| `SnoreAlarm/WatchAlert.swift` | 知らせる端末 (`AlertDevice`: iPhone / Watch / 両方)、Watch への通知の間隔と iPhone への切り替えの判定、Watch のペアリング確認 (`WatchLink`) |
 | `SnoreAlarm/Views/OnboardingView.swift` | 初回起動時の案内 (知らせる端末の選択と Watch の準備) |
 | `SnoreAlarm/AlarmEventStore.swift` | 振動で知らせた記録 (時刻・端末・自分で止めたか。UserDefaults、約 8 日分)。一晩の記録のグラフとまとめに出す |
 | `SnoreAlarm/MonitoringSessionStore.swift` | 監視の開始・終了時刻の記録 (UserDefaults、約 8 日分) |
@@ -165,7 +166,8 @@
 - [x] バックグラウンドでいびきを検知したときの通知 (「振動を止める」ボタン付き) と設定どおりの振動
 - [x] いびきの録音 (いびき区間のみ、AAC 16kHz)、ログ・一覧からの再生、1 週間での自動削除 (`RecordingTests` で切り出し・保存サイズ・期限切れ削除を確認)
 - [x] 寝る時刻のお知らせ (通知から 1 タップで開始) と監視の自動終了 (`MonitoringScheduleTests` で時刻の計算を確認。通知からの開始は実機未確認)。以前の「待機中もマイクを動かして自動開始」は廃止
-- [x] Apple Watch で知らせる (初回の案内で iPhone / Watch を選択、メイン画面のスイッチで切り替え。`WatchAlertTests` で通知の間隔と切り替えの判定を確認。Watch での振動は実機未確認)
+- [x] Apple Watch で知らせる (初回の案内で iPhone / Watch / 両方を選択、メイン画面の 3 択で切り替え。`WatchAlertTests` で通知の間隔と切り替えの判定を確認。Watch での振動は実機未確認)
+- [x] 両方で知らせる (2026-10-25 追加。Watch への通知と iPhone の振動を同時に始める。Watch・iPhone の通知や画面のどれかで止めると、両方の振動が止まり、Watch 向けの通知も消える。実機未確認)
 - [x] 一晩の記録のグラフ (`NightRecordTests` で区切り・複数回の監視・終了を記録できなかった監視のまとめ方を確認。録音の最大音量はファイル名に入れ、以前の録音は表示時に読み込んで測る。画面は実機未確認)
 
 ### 作業中: Windows PC から iPhone へのインストール
