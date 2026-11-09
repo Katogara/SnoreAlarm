@@ -13,10 +13,12 @@ struct NightRecord: Identifiable {
     let dayStart: Date
     /// 監視していた時間帯 (古い順)
     let periods: [Period]
-    /// 録音したいびき (古い順)
+    /// 録音したいびき・物音・休止中の音 (古い順)
     let recordings: [RecordingStore.Recording]
     /// 振動で知らせた記録 (古い順)
     let alarms: [AlarmEventStore.Event]
+    /// いびきを数えるのを休止していた時間帯 (iPhone を手に持って使っていたとき。古い順)
+    var pauses: [Period] = []
     /// グラフに表示する範囲 (最初の監視の開始から最後の監視の終了まで)
     let start: Date
     let end: Date
@@ -31,9 +33,29 @@ struct NightRecord: Identifiable {
         periods.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
     }
 
-    /// 録音したいびきの合計の長さ
+    /// 録音したいびき (物音・休止中の音を除く)
+    var snores: [RecordingStore.Recording] {
+        recordings.filter(\.isSnore)
+    }
+
+    /// いびきに数えなかった物音
+    var noises: [RecordingStore.Recording] {
+        recordings.filter { $0.kind == .noise }
+    }
+
+    /// 休止中に拾った、いびきの条件に合った音
+    var pausedSounds: [RecordingStore.Recording] {
+        recordings.filter { $0.kind == .paused }
+    }
+
+    /// 休止していた時間の合計
+    var pausedDuration: TimeInterval {
+        pauses.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+    }
+
+    /// 録音したいびきの合計の長さ (物音を除く)
     var snoreDuration: TimeInterval {
-        recordings.reduce(0) { $0 + $1.duration }
+        snores.reduce(0) { $0 + $1.duration }
     }
 
     /// `date` を含む夜の区切りの時刻
@@ -51,7 +73,8 @@ struct NightRecord: Identifiable {
     /// 監視の記録・録音・振動を一晩ごとにまとめる (新しい夜が先)。
     /// - Parameter isMonitoring: 今監視中なら、終了していない最後の監視は今まで続いているものとする
     static func nights(sessions: [MonitoringSessionStore.Session], recordings: [RecordingStore.Recording],
-                       alarms: [AlarmEventStore.Event] = [], boundaryMinutes: Int, isMonitoring: Bool,
+                       alarms: [AlarmEventStore.Event] = [], pauses: [PauseStore.Pause] = [],
+                       boundaryMinutes: Int, isMonitoring: Bool,
                        now: Date = Date(), calendar: Calendar = .current) -> [NightRecord] {
         let sessions = sessions.sorted { $0.start < $1.start }
         let recordings = recordings.sorted { $0.date < $1.date }
@@ -77,6 +100,7 @@ struct NightRecord: Identifiable {
             var periods: [Period] = []
             var recordings: [RecordingStore.Recording] = []
             var alarms: [AlarmEventStore.Event] = []
+            var pauses: [Period] = []
         }
         var groups: [Date: Group] = [:]
         for period in periods {
@@ -94,6 +118,14 @@ struct NightRecord: Identifiable {
             groups[dayStart(containing: owner?.start ?? alarm.date, boundaryMinutes: boundaryMinutes, calendar: calendar),
                    default: Group()].alarms.append(alarm)
         }
+        for pause in pauses.sorted(by: { $0.start < $1.start }) {
+            // 休止は監視の中でしか起きないので、その監視の範囲に収める (終わりを記録できなかった休止は監視の終わりまで)
+            guard let owner = periods.last(where: { $0.start <= pause.start && pause.start <= $0.end }) else { continue }
+            let end = min(pause.end ?? owner.end, owner.end)
+            guard end > pause.start else { continue }
+            groups[dayStart(containing: owner.start, boundaryMinutes: boundaryMinutes, calendar: calendar),
+                   default: Group()].pauses.append(Period(start: pause.start, end: end))
+        }
 
         return groups.compactMap { dayStart, group in
             let starts = group.periods.map(\.start) + group.recordings.map { $0.date.addingTimeInterval(-$0.duration) }
@@ -103,7 +135,7 @@ struct NightRecord: Identifiable {
             // 短すぎるとグラフの横軸が細かくなりすぎるため、最低 10 分の幅にする
             end = max(end, start.addingTimeInterval(10 * 60))
             return NightRecord(dayStart: dayStart, periods: group.periods, recordings: group.recordings,
-                               alarms: group.alarms, start: start, end: end)
+                               alarms: group.alarms, pauses: group.pauses, start: start, end: end)
         }
         .sorted { $0.dayStart > $1.dayStart }
     }

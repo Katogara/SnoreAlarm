@@ -12,8 +12,29 @@ enum RecordingStore {
         let duration: TimeInterval
         /// 録音したままの最大音量 (dBFS)。最大音量をファイル名に入れる前の録音では nil
         var peakDB: Float?
+        var kind: Kind = .snore
 
         var id: URL { url }
+        var isSnore: Bool { kind == .snore }
+
+        /// 一覧などで長さの前に付ける種類の表示 (いびきなら空)
+        var kindLabel: String {
+            switch kind {
+            case .snore: ""
+            case .noise: "物音 (いびきに数えていません)・"
+            case .paused: "休止中 (いびきに数えていません)・"
+            }
+        }
+    }
+
+    /// 録音した音の種類。ファイル名の先頭に入れる
+    enum Kind: String {
+        /// いびきとして数えた音
+        case snore
+        /// いびきの条件に近いが、途切れ途切れのためいびきに数えなかった物音 (画面のタップの連続など)
+        case noise
+        /// iPhone を手に持って使っていたため、いびきを数えるのを休止していたあいだに、いびきの条件に合った音
+        case paused
     }
 
     /// 録音を残す期間 (1週間)
@@ -30,9 +51,9 @@ enum RecordingStore {
     }
 
     /// バックグラウンドのスレッドで保存し、終わったらメインスレッドで `completion` を呼ぶ (失敗時は nil)。
-    static func save(_ samples: [Float], date: Date, completion: @escaping @MainActor (URL?) -> Void) {
+    static func save(_ samples: [Float], date: Date, kind: Kind = .snore, completion: @escaping @MainActor (URL?) -> Void) {
         queue.async {
-            let url = write(samples, date: date)
+            let url = write(samples, date: date, kind: kind)
             Task { @MainActor in completion(url) }
         }
     }
@@ -42,12 +63,13 @@ enum RecordingStore {
         queue.async { deleteExpired() }
     }
 
-    static func write(_ samples: [Float], date: Date, in directory: URL = directory) -> URL? {
+    static func write(_ samples: [Float], date: Date, kind: Kind = .snore, in directory: URL = directory) -> URL? {
         guard !samples.isEmpty else { return nil }
         let duration = Double(samples.count) / SnoreRecorder.sampleRate
         var peak: Float = 0
         vDSP_maxmgv(samples, 1, &peak, vDSP_Length(samples.count))
-        let url = directory.appending(path: fileName(date: date, duration: duration, peakDB: Waveform.decibels(peak)))
+        let url = directory.appending(path: fileName(date: date, duration: duration, peakDB: Waveform.decibels(peak),
+                                                     kind: kind))
         do {
             try prepare(directory)
             do {
@@ -187,9 +209,10 @@ enum RecordingStore {
         try? FileManager.default.removeItem(at: recording.url)
     }
 
-    /// `snore-<日時 ms>-<長さ ms>-<最大音量 -dB の 10 倍>.aac`。区切りの "-" と紛れないよう、最大音量は符号を外して入れる
-    static func fileName(date: Date, duration: TimeInterval, peakDB: Float? = nil) -> String {
-        var name = "snore-\(Int64(date.timeIntervalSince1970 * 1000))-\(Int(duration * 1000))"
+    /// `snore-<日時 ms>-<長さ ms>-<最大音量 -dB の 10 倍>.aac`。区切りの "-" と紛れないよう、最大音量は符号を外して入れる。
+    /// 物音・休止中の音は、先頭を `noise`・`paused` にする (`Kind`)
+    static func fileName(date: Date, duration: TimeInterval, peakDB: Float? = nil, kind: Kind = .snore) -> String {
+        var name = "\(kind.rawValue)-\(Int64(date.timeIntervalSince1970 * 1000))-\(Int(duration * 1000))"
         if let peakDB {
             let tenths = peakDB.isFinite ? Int((min(-peakDB, 999) * 10).rounded()) : 9999
             name += "-\(max(tenths, 0))"
@@ -199,13 +222,13 @@ enum RecordingStore {
 
     static func recording(at url: URL) -> Recording? {
         let parts = url.deletingPathExtension().lastPathComponent.split(separator: "-")
-        guard url.pathExtension == "aac", parts.count == 3 || parts.count == 4, parts[0] == "snore",
+        guard url.pathExtension == "aac", parts.count == 3 || parts.count == 4, let kind = Kind(rawValue: String(parts[0])),
               let millis = Double(parts[1]), let durationMillis = Double(parts[2]) else {
             return nil
         }
         let peakDB = parts.count == 4 ? Float(parts[3]).map { -$0 / 10 } : nil
         return Recording(url: url, date: Date(timeIntervalSince1970: millis / 1000), duration: durationMillis / 1000,
-                         peakDB: peakDB)
+                         peakDB: peakDB, kind: kind)
     }
 
     /// 最大音量をファイル名に持たない (以前の版の) 録音を読み込んで、最大音量を測る。
