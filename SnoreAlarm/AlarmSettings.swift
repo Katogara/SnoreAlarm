@@ -42,6 +42,9 @@ struct AlarmSettings {
         static let watchFallback = "watchFallback"
         /// 初回の案内 (知らせる端末の選択) を終えた
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
+        /// ショートカットのオートメーションで監視を自動で始める時刻 (0 時からの分)。
+        /// 実際の時刻はオートメーションに登録したもので、こちらは案内に出すための控え
+        static let automationStartMinutes = "automationStartMinutes"
     }
 
     enum Default {
@@ -57,6 +60,7 @@ struct AlarmSettings {
         static let dayBoundaryMinutes = 12 * 60
         static let alertDevice = AlertDevice.iPhone
         static let watchFallback = true
+        static let automationStartMinutes = 23 * 60
     }
 
     var sensitivity = Default.sensitivity

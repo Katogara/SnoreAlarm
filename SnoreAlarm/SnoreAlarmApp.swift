@@ -7,7 +7,7 @@ struct SnoreAlarmApp: App {
     @State private var player: SnorePlayer
 
     init() {
-        let monitor = SnoreMonitor()
+        let monitor = SnoreMonitor.shared
         let player = SnorePlayer()
         // 寝る時刻のお知らせからなどでマイクを使い始めるときは、録音の再生を止める
         monitor.onWillUseMicrophone = { player.stop() }

@@ -7,6 +7,9 @@ import UIKit
 @MainActor
 @Observable
 final class SnoreMonitor {
+    /// アプリ全体で 1 つ (ショートカットの「監視を開始」からも使う)
+    static let shared = SnoreMonitor()
+
     enum State: Equatable {
         case idle
         case waiting(until: Date)
@@ -15,7 +18,7 @@ final class SnoreMonitor {
     }
 
     struct LogEntry: Identifiable {
-        enum Kind { case info, snore, alarm }
+        enum Kind { case info, snore, noise, alarm }
 
         let id = UUID()
         let date = Date()
@@ -29,7 +32,13 @@ final class SnoreMonitor {
     private(set) var levelDB: Float = -100
     private(set) var thresholdDB: Float?
     private(set) var snoreCount = 0
+    /// いびきの条件に近いが、途切れ途切れのためいびきに数えなかった物音の回数
+    private(set) var noiseCount = 0
+    /// 休止中に拾った、いびきの条件に合った音の回数 (数えずに録音した)
+    private(set) var pausedSoundCount = 0
     private(set) var alarmCount = 0
+    /// iPhone を手に持って使っているため、いびきを数えるのを休止している (`updatePause`)
+    private(set) var isPausedForScreen = false
     private(set) var startedAt: Date?
     private(set) var log: [LogEntry] = []
     /// いびき検知デモの実行中 (マイクは使わない)
@@ -80,9 +89,26 @@ final class SnoreMonitor {
     @ObservationIgnored private var backgroundSince: Date?
     @ObservationIgnored private var snoreCountAtBackground = 0
     @ObservationIgnored private var stallsInBackground = 0
+    /// iPhone を手に持っているか (加速度センサー)
+    @ObservationIgnored private let handling = HandlingMonitor()
+    /// 画面を使わなくなった (ロックした) 時刻
+    @ObservationIgnored private var screenIdleSince: Date?
+    /// 画面を使い始めた時刻
+    @ObservationIgnored private var screenInUseSince: Date?
+    /// 休止を始めた時刻
+    @ObservationIgnored private var pausedSince: Date?
+    /// 休止が `maxPause` 続いて数え始めた。画面をロックするまで、手に持っていても休止しない
+    @ObservationIgnored private var pauseLimitReached = false
 
     /// この秒数マイク入力が来なければ、止まったとみなして再開する
     static let inputStallSeconds: TimeInterval = 10
+    /// 画面をロックしてから、いびきを数え始めるまでの秒数。眠りに入るのはロックしてしばらくあとなので、
+    /// 起きているあいだの物音 (画面のタップなど) をいびきと間違えないよう、それまでは数えない
+    static let resumeAfterLock: TimeInterval = 3 * 60
+    /// 画面を使用中でも、iPhone がこの秒数動かなければ (置いたまま動画や音楽を流しているなど) 数え始める
+    static let resumeAfterStill: TimeInterval = 5 * 60
+    /// 休止はこの秒数までにする。迷ったら数える側に倒し、黙って一晩検知しないことを防ぐ
+    static let maxPause: TimeInterval = 30 * 60
 
     var isActive: Bool { state != .idle }
 
@@ -111,10 +137,83 @@ final class SnoreMonitor {
         return LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
     }
 
+    /// 画面を使用中 (このアプリを表示中か、他のアプリを使用中)
+    private var isScreenInUse: Bool {
+        !isInBackground || isUsingOtherApp
+    }
+
+    /// iPhone を手に持って使っているあいだは、いびきを数えるのを休止する (検知と録音は続け、振動だけしない)。
+    /// - 画面を使用中で、手に持って動かしている → 休止。`resumeAfterStill` 動かなければ数え始める
+    /// - 画面をロックした → ロックから `resumeAfterLock` たったら数え始める
+    /// - 休止が `maxPause` 続いた → 数え始め、画面をロックするまで休止しない
+    /// 監視の開始時、画面の表示が切り替わったとき、`runHealthCheck` の 5 秒ごとに呼ぶ
+    private func updatePause() {
+        guard state != .idle, !isDemo else { return }
+        let now = Date()
+        if isScreenInUse {
+            screenIdleSince = nil
+            let inUseSince = screenInUseSince ?? now
+            screenInUseSince = inUseSince
+            handling.start()
+            // 加速度センサーがない端末では動きが分からないため、画面を使っているあいだは手に持っているとみなす
+            let lastHandled = max(handling.lastMotionDate ?? inUseSince, inUseSince)
+            let isStill = handling.isAvailable && now.timeIntervalSince(lastHandled) >= Self.resumeAfterStill
+            if isPausedForScreen, let since = pausedSince, now.timeIntervalSince(since) >= Self.maxPause {
+                pauseLimitReached = true
+                endPause("休止が\(Int(Self.maxPause / 60))分続いたため、いびきを数え始めました (画面をロックするまで休止しません)")
+            } else if isPausedForScreen && isStill {
+                endPause("iPhone を置いて\(Int(Self.resumeAfterStill / 60))分たったため、いびきを数え始めました")
+            } else if !isPausedForScreen && !isStill && !pauseLimitReached {
+                beginPause(at: now)
+            }
+            return
+        }
+        screenInUseSince = nil
+        pauseLimitReached = false
+        handling.stop()
+        let since = screenIdleSince ?? now
+        screenIdleSince = since
+        if isPausedForScreen && now.timeIntervalSince(since) >= Self.resumeAfterLock {
+            endPause("画面をロックして\(Int(Self.resumeAfterLock / 60))分たったため、いびきを数え始めました")
+        }
+    }
+
+    private func beginPause(at date: Date) {
+        isPausedForScreen = true
+        pausedSince = date
+        PauseStore.begin(at: date)
+        append(.info, "iPhone を手に持って使っているため、いびきを数えるのを休止しています (いびきに似た音は録音します。iPhone を置いて\(Int(Self.resumeAfterStill / 60))分たつか、画面をロックして\(Int(Self.resumeAfterLock / 60))分たつと数え始めます)")
+    }
+
+    private func endPause(_ message: String) {
+        isPausedForScreen = false
+        pausedSince = nil
+        PauseStore.end()
+        // 休止中に拾った音をいびきの回数に入れない
+        processor?.resetHistory()
+        append(.info, message)
+    }
+
     // MARK: - 開始 / 停止
 
-    /// - Parameter fromReminder: 寝る時刻のお知らせから開始した
-    func start(fromReminder: Bool = false) async {
+    /// 監視を始めたきっかけ (ログに出す)
+    enum StartSource {
+        case manual
+        /// 寝る時刻のお知らせ
+        case reminder
+        /// ショートカットのオートメーション (`StartMonitoringIntent`)
+        case automation
+
+        var message: String {
+            switch self {
+            case .manual: "監視を開始しました"
+            case .reminder: "寝る時刻のお知らせから監視を開始しました"
+            case .automation: "ショートカットのオートメーションから監視を開始しました"
+            }
+        }
+    }
+
+    func start(source: StartSource = .manual) async {
         guard state == .idle else { return }
         errorMessage = nil
 
@@ -147,7 +246,7 @@ final class SnoreMonitor {
         log.removeAll()
         startedAt = Date()
         MonitoringSessionStore.begin()
-        append(.info, fromReminder ? "寝る時刻のお知らせから監視を開始しました" : "監視を開始しました")
+        append(.info, source.message)
         if let scheduledEnd {
             append(.info, "\(scheduledEnd.formatted(date: .omitted, time: .shortened)) に自動で終了します")
         }
@@ -162,6 +261,7 @@ final class SnoreMonitor {
         } else {
             state = .monitoring
         }
+        updatePause()
         runScheduleTimer()
         runHealthCheck()
         updateReminders()
@@ -187,6 +287,7 @@ final class SnoreMonitor {
                     lastStatus = Date()
                 }
                 self.checkInput()
+                self.updatePause()
             }
         }
     }
@@ -233,6 +334,8 @@ final class SnoreMonitor {
 
     private func resetAlarmCounts() {
         snoreCount = 0
+        noiseCount = 0
+        pausedSoundCount = 0
         alarmCount = 0
         watchAlertCount = 0
         iPhoneFallbackCount = 0
@@ -292,11 +395,16 @@ final class SnoreMonitor {
 
     /// 寝る時刻のお知らせから監視を始める。デモ中ならデモを終えてから始める。
     private func startFromReminder() async {
+        await startUnlessMonitoring(source: .reminder)
+    }
+
+    /// お知らせやオートメーションから監視を始める。すでに監視中なら何もしない。デモ中ならデモを終えてから始める。
+    func startUnlessMonitoring(source: StartSource) async {
         if isDemo {
             finishDemo("デモを終了しました (監視を開始するため)")
         }
         guard state == .idle else { return }
-        await start(fromReminder: true)
+        await start(source: source)
     }
 
     /// 監視中に終了時刻まで待つ。時計の変更にも追従できるよう、1 分ごとに起きて時刻を確かめる。
@@ -371,6 +479,8 @@ final class SnoreMonitor {
                     case .snore(let snore):
                         self.snoreCount += 1
                         self.append(.snore, String(format: "[デモ] いびきを検知 (%.1f秒, %.0f dB)", snore.duration, snore.peakDB))
+                    case .noise:
+                        break
                     case .alarm(let count):
                         self.alarmCount += 1
                         self.append(.alarm, "[デモ] \(count)回のいびきを検知したため振動しました")
@@ -448,6 +558,15 @@ final class SnoreMonitor {
         healthTask = nil
         inputStalled = false
         backgroundSince = nil
+        if isPausedForScreen {
+            PauseStore.end()
+        }
+        isPausedForScreen = false
+        pausedSince = nil
+        pauseLimitReached = false
+        screenIdleSince = nil
+        screenInUseSince = nil
+        handling.stop()
         if watchTask != nil {
             notifier.clearWatchAlerts()
         }
@@ -544,6 +663,7 @@ final class SnoreMonitor {
         snoreCountAtBackground = snoreCount
         stallsInBackground = 0
         processor?.resetLongestGap()
+        updatePause()
     }
 
     /// 画面に戻ったとき、ロック中・他のアプリを使用中だった間の様子をログに出し、マイクが止まっていれば再開する
@@ -569,6 +689,7 @@ final class SnoreMonitor {
         }
         backgroundSince = nil
         checkInput()
+        updatePause()
     }
 
     private var isWaiting: Bool {
@@ -659,12 +780,23 @@ final class SnoreMonitor {
 
         for event in output.events {
             switch event {
+            case .snore(let snore) where isPausedForScreen:
+                // 休止中は数えず、いびきを見逃していないかを朝に確かめられるよう録音だけする
+                pausedSoundCount += 1
+                let logID = append(.noise, String(format: "休止中に、いびきに似た音を検知 (数えずに録音します。%.1f秒, %.0f dB)",
+                                                  snore.duration, snore.peakDB))
+                saveRecording(of: snore, kind: .paused, logID: logID)
             case .snore(let snore):
                 snoreCount += 1
                 let logID = append(.snore, String(format: "いびきを検知 (%.1f秒, %.0f dB)", snore.duration, snore.peakDB))
                 saveRecording(of: snore, logID: logID)
+            case .noise(let noise):
+                noiseCount += 1
+                let logID = append(.noise, String(format: "物音を検知 (途切れ途切れの音のため、いびきに数えません。%.1f秒, %.0f dB)",
+                                                  noise.duration, noise.peakDB))
+                saveRecording(of: noise, kind: .noise, logID: logID)
             case .alarm(let count):
-                guard state == .monitoring else { continue }
+                guard state == .monitoring, !isPausedForScreen else { continue }
                 alarmCount += 1
                 append(.alarm, "\(count)回のいびきを検知したため振動しました")
                 startAlarm(snoreCount: count)
@@ -843,8 +975,8 @@ final class SnoreMonitor {
         }
     }
 
-    /// いびきの前後の音を切り出して保存し、終わったらログに録音を結び付ける。
-    private func saveRecording(of snore: SnoreEvent, logID: UUID) {
+    /// いびき (または物音) の前後の音を切り出して保存し、終わったらログに録音を結び付ける。
+    private func saveRecording(of snore: SnoreEvent, kind: RecordingStore.Kind = .snore, logID: UUID) {
         guard let recorder, savedRecordings < RecordingStore.maxPerSession else { return }
         let samples = recorder.clip(start: snore.start, duration: snore.duration)
         guard !samples.isEmpty else { return }
@@ -852,7 +984,7 @@ final class SnoreMonitor {
         if savedRecordings == RecordingStore.maxPerSession {
             append(.info, "録音が\(RecordingStore.maxPerSession)件に達したため、今回はこれ以上録音しません")
         }
-        RecordingStore.save(samples, date: Date()) { [weak self] url in
+        RecordingStore.save(samples, date: Date(), kind: kind) { [weak self] url in
             guard let self, let url, let index = self.log.firstIndex(where: { $0.id == logID }) else { return }
             self.log[index].recordingURL = url
         }
