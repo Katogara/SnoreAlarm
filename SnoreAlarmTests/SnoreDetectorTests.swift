@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreMotion
 import XCTest
 @testable import SnoreAlarm
 
@@ -127,6 +128,23 @@ final class SnoreDetectorTests: XCTestCase {
         XCTAssertEqual(snores(in: events).count, 1)
     }
 
+    /// 画面のタップの連続のような途切れ途切れの低い音は、いびきに数えず物音として知らせる
+    func testSparseTapsAreNoiseNotSnores() {
+        var segments: [Segment] = [.quiet(5)]
+        for _ in 0..<8 {
+            for _ in 0..<8 {
+                segments += [Segment(seconds: frameDuration, db: -30, ratio: 0.9), .quiet(0.2)]
+            }
+            segments += [.quiet(3)]
+        }
+        let events = run(segments)
+        let noises = events.filter { if case .noise = $0 { true } else { false } }
+
+        XCTAssertTrue(snores(in: events).isEmpty)
+        XCTAssertEqual(noises.count, 8)
+        XCTAssertEqual(alarmCount(in: events), 0)
+    }
+
     func testAlarmClearsHistory() {
         var segments: [Segment] = [.quiet(5)]
         for _ in 0..<7 {
@@ -245,6 +263,26 @@ final class RecordingTests: XCTestCase {
         XCTAssertNil(recordings[1].peakDB)
         XCTAssertEqual(recordings[0].peakDB ?? 0, -31.2, accuracy: 0.001)
         XCTAssertEqual(recordings[0].duration, 2, accuracy: 0.001)
+    }
+
+    /// いびきに数えなかった物音と休止中の音の録音は、いびきと分けて一覧・一晩の記録に出す
+    func testNoiseAndPausedRecordingsAreListedSeparately() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let date = Date(timeIntervalSince1970: 1_800_000_000)
+        for (offset, kind) in [(0.0, RecordingStore.Kind.snore), (10, .noise), (20, .paused)] {
+            let name = RecordingStore.fileName(date: date.addingTimeInterval(offset), duration: 1 + offset / 100, peakDB: -30, kind: kind)
+            FileManager.default.createFile(atPath: directory.appending(path: name).path, contents: Data([0]))
+        }
+        let recordings = RecordingStore.list(in: directory)
+        XCTAssertEqual(recordings.map(\.kind), [.paused, .noise, .snore])
+        XCTAssertEqual(recordings[1].duration, 1.1, accuracy: 0.001)
+
+        let nights = NightRecord.nights(sessions: [], recordings: recordings, boundaryMinutes: 12 * 60, isMonitoring: false)
+        XCTAssertEqual(nights.count, 1)
+        XCTAssertEqual(nights[0].snores.count, 1)
+        XCTAssertEqual(nights[0].noises.count, 1)
+        XCTAssertEqual(nights[0].pausedSounds.count, 1)
+        XCTAssertEqual(nights[0].snoreDuration, 1, accuracy: 0.001)
     }
 
     private func peak(_ samples: ArraySlice<Float>) -> Float {
@@ -527,6 +565,30 @@ final class NightRecordTests: XCTestCase {
         XCTAssertEqual(first.recordings.count, 3)
         XCTAssertEqual(first.monitoredDuration, (150 + 110 + 195) * 60)
         XCTAssertEqual(nights[0].recordings.count, 1)
+    }
+
+    /// 休止の時間帯は、その監視の範囲に収めて一晩に入れる (終わりを記録できなかった休止は監視の終わりまで)
+    func testPausesAreClippedToSessions() {
+        let sessions = [Session(start: date(21, 23, 0), end: date(22, 6, 0))]
+        let pauses = [
+            PauseStore.Pause(start: date(21, 23, 0), end: date(21, 23, 20)),
+            PauseStore.Pause(start: date(22, 5, 30), end: nil),
+            // 監視していない時間の休止は入れない
+            PauseStore.Pause(start: date(22, 12, 0), end: date(22, 12, 10)),
+        ]
+        let nights = NightRecord.nights(sessions: sessions, recordings: [], pauses: pauses, boundaryMinutes: 12 * 60,
+                                        isMonitoring: false, now: date(22, 13, 0), calendar: calendar)
+        XCTAssertEqual(nights.count, 1)
+        XCTAssertEqual(nights[0].pauses, [NightRecord.Period(start: date(21, 23, 0), end: date(21, 23, 20)),
+                                          NightRecord.Period(start: date(22, 5, 30), end: date(22, 6, 0))])
+        XCTAssertEqual(nights[0].pausedDuration, 50 * 60)
+    }
+
+    /// 置いたままの小さな揺れは動きとみなさず、手に持ったときの揺れは動きとみなす
+    func testHandlingMotionThreshold() {
+        let still = CMAcceleration(x: 0, y: 0, z: -1)
+        XCTAssertFalse(HandlingMonitor.isMotion(from: still, to: CMAcceleration(x: 0.003, y: -0.002, z: -1.004)))
+        XCTAssertTrue(HandlingMonitor.isMotion(from: still, to: CMAcceleration(x: 0.04, y: 0.02, z: -0.97)))
     }
 
     /// 昼に眠る人: 区切りを 18:00 にすると、朝 8 時から夕方 16 時までの監視が一晩になる
