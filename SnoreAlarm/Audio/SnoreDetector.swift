@@ -24,6 +24,9 @@ struct SnoreDetectorConfig: Equatable {
     var maxEventDuration: TimeInterval = 3.5
     /// 1回のいびきの途中で許容する無音の長さ
     var gapTolerance: TimeInterval = 0.25
+    /// 音イベントの長さのうち、音が鳴っていた時間の割合の下限。いびきは切れ目なく続くが、
+    /// 画面のタップのような短い音の連続は途切れ途切れになるので、これより低ければ物音とする
+    var minFillRatio: Double = 0.5
     /// 連続するいびきの最小間隔 (呼吸周期より短いものは同じいびきとみなす)
     var minInterval: TimeInterval = 1.5
     /// `windowSeconds` 秒以内に `requiredSnores` 回いびきを検知したらアラーム
@@ -40,6 +43,8 @@ struct SnoreEvent: Equatable {
 
 enum DetectorEvent: Equatable {
     case snore(SnoreEvent)
+    /// 長さと音の低さはいびきの条件に合うが、途切れ途切れの音 (画面のタップの連続など)。いびきには数えない
+    case noise(SnoreEvent)
     case alarm(snoreCount: Int)
 }
 
@@ -63,9 +68,10 @@ struct SnoreDetector {
         var notLowPitched = 0
         var tooSoon = 0
         var snores = 0
+        var sparse = 0
 
         var description: String {
-            "snore=\(snores) short=\(tooShort) long=\(tooLong) notLow=\(notLowPitched) soon=\(tooSoon)"
+            "snore=\(snores) short=\(tooShort) long=\(tooLong) notLow=\(notLowPitched) soon=\(tooSoon) sparse=\(sparse)"
         }
     }
 
@@ -80,9 +86,12 @@ struct SnoreDetector {
         var peakDB: Float
         var ratioSum: Float
         var loudFrames: Int
+        /// 音が鳴っていたフレームの長さの合計
+        var loudDuration: TimeInterval = 0
 
         var duration: TimeInterval { end - start }
         var meanRatio: Float { loudFrames > 0 ? ratioSum / Float(loudFrames) : 0 }
+        var fillRatio: Double { duration > 0 ? loudDuration / duration : 0 }
     }
 
     init(config: SnoreDetectorConfig = SnoreDetectorConfig()) {
@@ -113,6 +122,7 @@ struct SnoreDetector {
             current!.peakDB = max(current!.peakDB, frame.levelDB)
             current!.ratioSum += frame.lowBandRatio
             current!.loudFrames += 1
+            current!.loudDuration += frame.duration
             // 長く続く音 (扇風機・エアコン等) はいびきではないので、ノイズフロアに取り込んでいく
             if current!.duration > config.maxEventDuration {
                 adaptFloor(toward: frame.levelDB, rate: 0.01)
@@ -140,6 +150,11 @@ struct SnoreDetector {
         guard candidate.meanRatio >= config.minLowBandRatio else {
             stats.notLowPitched += 1
             return []
+        }
+        guard candidate.fillRatio >= config.minFillRatio else {
+            stats.sparse += 1
+            return [.noise(SnoreEvent(start: candidate.start, duration: candidate.duration,
+                                      peakDB: candidate.peakDB, lowBandRatio: candidate.meanRatio))]
         }
         if let last = recentSnores.last, candidate.start - last < config.minInterval {
             stats.tooSoon += 1

@@ -19,6 +19,7 @@ final class AudioProcessor: @unchecked Sendable {
 
     private let lock = NSLock()
     private var suppressed = false
+    private var needsReset = false
     private var reportsLevels = true
     private var lastInput: Date?
     let createdAt = Date()
@@ -85,6 +86,11 @@ final class AudioProcessor: @unchecked Sendable {
         lock.withLock { suppressed = value }
     }
 
+    /// 次のフレームで、検出途中の状態といびきの履歴を消す (休止を終えて数え始めるとき。休止中に拾った音を数えないように)
+    func resetHistory() {
+        lock.withLock { needsReset = true }
+    }
+
     /// false の間は入力レベル表示用の通知を止め、いびきの検出結果だけを通知する。
     /// 画面が見えないとき (ロック中など) にメインスレッドを起こさず、電池消費と発熱を抑える。
     func setReportsLevels(_ value: Bool) {
@@ -121,11 +127,14 @@ final class AudioProcessor: @unchecked Sendable {
         frameIndex += 1
 
         var events: [DetectorEvent] = []
-        let (isSuppressed, reportsLevels) = lock.withLock { (suppressed, self.reportsLevels) }
+        let (isSuppressed, reportsLevels, needsReset) = lock.withLock {
+            defer { self.needsReset = false }
+            return (suppressed, self.reportsLevels, self.needsReset)
+        }
         if isSuppressed {
             wasSuppressed = true
         } else {
-            if wasSuppressed {
+            if wasSuppressed || needsReset {
                 detector.reset()
                 wasSuppressed = false
             }
