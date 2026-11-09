@@ -15,6 +15,8 @@ struct SettingsView: View {
     @AppStorage(AlarmSettings.Key.scheduleEndMinutes) private var scheduleEndMinutes = AlarmSettings.Default.scheduleEndMinutes
     @AppStorage(AlarmSettings.Key.dayBoundaryMinutes) private var dayBoundaryMinutes = AlarmSettings.Default.dayBoundaryMinutes
     @AppStorage(AlarmSettings.Key.watchFallback) private var watchFallback = AlarmSettings.Default.watchFallback
+    @AppStorage(AlarmSettings.Key.automationStartMinutes) private var automationStartMinutes = AlarmSettings.Default.automationStartMinutes
+    @State private var showingAutomation = false
 
     var body: some View {
         NavigationStack {
@@ -89,6 +91,17 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Button {
+                        showingAutomation = true
+                    } label: {
+                        LabeledContent("自動で監視を始める",
+                                       value: String(format: "%d:%02d", automationStartMinutes / 60, automationStartMinutes % 60))
+                    }
+                } footer: {
+                    PhraseText("iPhone の「ショートカット」アプリに登録しておくと、毎日決まった時刻にいびきアラームが開いて監視を始めます。押すと登録の手順を案内します。時刻を変えたときは、ショートカットアプリのオートメーションの時刻も変えてください。")
+                }
+
+                Section {
                     Picker("開始までの待ち時間", selection: $startDelayMinutes) {
                         Text("なし").tag(0)
                         Text("10分").tag(10)
@@ -133,17 +146,15 @@ struct SettingsView: View {
                 // 時刻を選んでいる途中で何度も予約し直さないよう、画面を閉じたときにまとめて反映する
                 monitor.applySchedule()
             }
+            // Form の Section に付けると行ごとに付いて開いた直後に閉じるため、ここで出す
+            .sheet(isPresented: $showingAutomation) {
+                AutomationTutorialView()
+            }
         }
     }
 
     /// 0 時からの分を DatePicker の時刻として扱う
     private func timeBinding(_ minutes: Binding<Int>) -> Binding<Date> {
-        Binding {
-            Calendar.current.date(bySettingHour: minutes.wrappedValue / 60, minute: minutes.wrappedValue % 60,
-                                  second: 0, of: Date()) ?? Date()
-        } set: { date in
-            let components = Calendar.current.dateComponents([.hour, .minute], from: date)
-            minutes.wrappedValue = (components.hour ?? 0) * 60 + (components.minute ?? 0)
-        }
+        minutesBinding(minutes)
     }
 }

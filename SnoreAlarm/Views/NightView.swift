@@ -46,7 +46,7 @@ struct NightView: View {
                             .padding(.top, 8)
                         zoomControls(of: night)
                     } footer: {
-                        PhraseText("横が時刻、縦が録音したいびきの大きさ (録音したままの音量) です。色の付いた帯は監視していた時間、オレンジの点線は振動で知らせた時刻です。ピンチで拡大・縮小し、拡大中は左右にスクロールできます。グラフをタップすると、近くのいびきを選んで波形の確認と再生ができます。いびきの録音をオフにしていた間のいびきは表示されません。")
+                        PhraseText("横が時刻、縦が録音したいびきの大きさ (録音したままの音量) です。灰色の線は、いびきに数えなかった物音 (画面のタップの連続など、途切れ途切れの音) です。紫の帯は iPhone を手に持って使っていたため、いびきを数えるのを休止していた時間で、紫の線はそのあいだに録音した、いびきに似た音です。うすい緑の帯は監視していた時間、オレンジの点線は振動で知らせた時刻です。ピンチで拡大・縮小し、拡大中は左右にスクロールできます。グラフをタップすると、近くのいびきを選んで波形の確認と再生ができます。いびきの録音をオフにしていた間のいびきは表示されません。")
                     }
                     if let selected = night.recordings.first(where: { $0.url == selectedURL }) {
                         selectedSection(selected, in: night)
@@ -126,11 +126,16 @@ struct NightView: View {
                               yStart: .value("音量", Double(Waveform.floorDB)), yEnd: .value("音量", 0.0))
                     .foregroundStyle(Color.teal.opacity(0.12))
             }
+            ForEach(night.pauses, id: \.self) { pause in
+                RectangleMark(xStart: .value("休止の開始", pause.start), xEnd: .value("休止の終了", pause.end),
+                              yStart: .value("音量", Double(Waveform.floorDB)), yEnd: .value("音量", 0.0))
+                    .foregroundStyle(Color.purple.opacity(0.15))
+            }
             ForEach(points) { point in
                 let isSelected = point.id == selectedURL
                 RuleMark(x: .value("時刻", point.recording.date),
                          yStart: .value("音量", Double(Waveform.floorDB)), yEnd: .value("音量", point.db))
-                    .foregroundStyle(isSelected ? Color.orange : Color.accentColor)
+                    .foregroundStyle(isSelected ? Color.orange : Self.color(of: point.recording.kind))
                     .lineStyle(StrokeStyle(lineWidth: isSelected ? 3 : 1.5))
             }
             ForEach(night.alarms, id: \.self) { alarm in
@@ -214,7 +219,7 @@ struct NightView: View {
                     }
                     .buttonStyle(.borderless)
                     .disabled(position == 0)
-                    .accessibilityLabel("前のいびき")
+                    .accessibilityLabel("前の音")
                     Button {
                         select(night.recordings[position + 1], in: night)
                     } label: {
@@ -223,7 +228,7 @@ struct NightView: View {
                     }
                     .buttonStyle(.borderless)
                     .disabled(position + 1 >= night.recordings.count)
-                    .accessibilityLabel("次のいびき")
+                    .accessibilityLabel("次の音")
                     PlayButton(url: recording.url)
                         .disabled(monitor.isActive)
                 }
@@ -236,7 +241,7 @@ struct NightView: View {
                 await player.showWaveform(of: recording.url)
             }
         } header: {
-            Text("選んだいびき (\(position + 1) / \(night.recordings.count))")
+            Text("\(recording.isSnore ? "選んだいびき" : "選んだ音") (\(position + 1) / \(night.recordings.count))")
         } footer: {
             if monitor.isActive {
                 PhraseText("監視中は再生できません (再生した音をいびきと誤検知しないため)。")
@@ -254,13 +259,20 @@ struct NightView: View {
             } else {
                 LabeledContent("監視していた時間", value: "記録なし")
             }
-            LabeledContent("いびき (録音した回数)", value: "\(night.recordings.count) 回")
+            LabeledContent("いびき (録音した回数)", value: "\(night.snores.count) 回")
             if night.hasMonitoringRecord && night.monitoredDuration >= 10 * 60 {
                 LabeledContent("1時間あたり",
-                               value: String(format: "%.1f 回", Double(night.recordings.count) / (night.monitoredDuration / 3600)))
+                               value: String(format: "%.1f 回", Double(night.snores.count) / (night.monitoredDuration / 3600)))
             }
             LabeledContent("いびきの合計", value: snoreTotalText(night.snoreDuration))
-            if let loudest = points.max(by: { $0.db < $1.db }) {
+            if !night.noises.isEmpty {
+                LabeledContent("いびきに数えなかった物音", value: "\(night.noises.count) 回")
+            }
+            if !night.pauses.isEmpty {
+                LabeledContent("休止していた時間", value: durationText(night.pausedDuration))
+                LabeledContent("休止中に録音した音", value: "\(night.pausedSounds.count) 回")
+            }
+            if let loudest = points.filter({ $0.recording.isSnore }).max(by: { $0.db < $1.db }) {
                 LabeledContent("最大の音量",
                                value: String(format: "%.0f dB", loudest.db)
                                    + " (\(loudest.recording.date.formatted(date: .omitted, time: .shortened)))")
@@ -389,7 +401,7 @@ struct NightView: View {
         let recordings = RecordingStore.list().filter { Date().timeIntervalSince($0.date) <= RecordingStore.retention }
         let previousDay = nights.indices.contains(index) ? nights[index].dayStart : nil
         nights = NightRecord.nights(sessions: MonitoringSessionStore.load(), recordings: recordings,
-                                    alarms: AlarmEventStore.load(), boundaryMinutes: boundaryMinutes,
+                                    alarms: AlarmEventStore.load(), pauses: PauseStore.load(), boundaryMinutes: boundaryMinutes,
                                     isMonitoring: monitor.isActive && !monitor.isDemo)
         index = nights.firstIndex { $0.dayStart == previousDay } ?? 0
         if nights.indices.contains(index) && nights[index].dayStart != previousDay {
@@ -418,6 +430,15 @@ struct NightView: View {
         }
     }
 
+    /// グラフの線の色: いびきはアクセントの色、物音は灰色、休止中の音は紫
+    static func color(of kind: RecordingStore.Kind) -> Color {
+        switch kind {
+        case .snore: .accentColor
+        case .noise: .gray
+        case .paused: .purple
+        }
+    }
+
     private func select(_ recording: RecordingStore.Recording, in night: NightRecord) {
         if player.playingURL != nil {
             player.stop()
@@ -427,13 +448,13 @@ struct NightView: View {
     }
 
     private func detail(of recording: RecordingStore.Recording) -> String {
-        let duration = String(format: "%.1f秒", recording.duration)
+        let duration = recording.kindLabel + String(format: "%.1f秒", recording.duration)
         guard let peak = recording.peakDB ?? measuredPeaks[recording.url], peak.isFinite else { return duration }
         return duration + String(format: "・最大 %.0f dB", peak)
     }
 
     private func busiestHour(of night: NightRecord) -> (hour: Int, count: Int)? {
-        let counts = Dictionary(grouping: night.recordings) { Calendar.current.component(.hour, from: $0.date) }
+        let counts = Dictionary(grouping: night.snores) { Calendar.current.component(.hour, from: $0.date) }
             .mapValues(\.count)
         guard let best = counts.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }) else {
             return nil

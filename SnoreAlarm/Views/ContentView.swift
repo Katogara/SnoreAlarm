@@ -27,6 +27,12 @@ struct ContentView: View {
                 if monitor.isActive || !monitor.log.isEmpty {
                     Section("今回の記録") {
                         LabeledContent("いびき検知", value: "\(monitor.snoreCount) 回")
+                        if monitor.noiseCount > 0 {
+                            LabeledContent("いびきに数えなかった物音", value: "\(monitor.noiseCount) 回")
+                        }
+                        if monitor.pausedSoundCount > 0 {
+                            LabeledContent("休止中に録音した音", value: "\(monitor.pausedSoundCount) 回")
+                        }
                         LabeledContent("振動アラーム", value: "\(monitor.alarmCount) 回")
                         if monitor.watchAlertCount > 0 || monitor.iPhoneFallbackCount > 0 {
                             LabeledContent("Apple Watch に通知", value: "\(monitor.watchAlertCount) 回")
@@ -206,7 +212,7 @@ private struct StatusCard: View {
         switch monitor.state {
         case .idle: "moon.zzz"
         case .waiting: "hourglass"
-        case .monitoring: monitor.isDemo ? "waveform" : "ear"
+        case .monitoring: monitor.isDemo ? "waveform" : monitor.isPausedForScreen ? "pause.circle" : "ear"
         case .alarming: "iphone.radiowaves.left.and.right"
         }
     }
@@ -215,7 +221,7 @@ private struct StatusCard: View {
         switch monitor.state {
         case .idle: .gray
         case .waiting: .indigo
-        case .monitoring: monitor.isDemo ? .purple : .blue
+        case .monitoring: monitor.isDemo ? .purple : monitor.isPausedForScreen ? .indigo : .blue
         case .alarming: .orange
         }
     }
@@ -224,7 +230,7 @@ private struct StatusCard: View {
         switch monitor.state {
         case .idle: "停止中"
         case .waiting: "開始待ち"
-        case .monitoring: monitor.isDemo ? "デモ: いびきを再現中" : "いびきを監視中"
+        case .monitoring: monitor.isDemo ? "デモ: いびきを再現中" : monitor.isPausedForScreen ? "休止中 (iPhone を使用中)" : "いびきを監視中"
         case .alarming: monitor.isDemo ? "デモ: 振動中" : "振動中"
         }
     }
@@ -238,6 +244,9 @@ private struct StatusCard: View {
         case .monitoring:
             if monitor.isDemo {
                 return "マイクは使わず、設定どおりの条件でいびきを流しています"
+            }
+            if monitor.isPausedForScreen {
+                return "手に持って使っているあいだは、タップの音などをいびきと間違えないよう、いびきを数えません (いびきに似た音は録音します)。iPhone を置いて\(Int(SnoreMonitor.resumeAfterStill / 60))分たつか、画面をロックして\(Int(SnoreMonitor.resumeAfterLock / 60))分たつと数え始めます"
             }
             if let end = monitor.scheduledEnd {
                 return "画面をロックしても監視を続け、いびきを検知すると通知と振動で知らせます。\(end.formatted(date: .omitted, time: .shortened)) に自動で終了します"
@@ -354,6 +363,7 @@ private struct LogRow: View {
         switch entry.kind {
         case .info: "info.circle"
         case .snore: "waveform"
+        case .noise: "hand.tap"
         case .alarm: "iphone.radiowaves.left.and.right"
         }
     }
@@ -362,6 +372,7 @@ private struct LogRow: View {
         switch entry.kind {
         case .info: .secondary
         case .snore: .blue
+        case .noise: .gray
         case .alarm: .orange
         }
     }

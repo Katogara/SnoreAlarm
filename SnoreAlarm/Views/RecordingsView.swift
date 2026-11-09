@@ -33,7 +33,7 @@ struct RecordingsView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(recording.date.formatted(date: .abbreviated, time: .standard))
                                         .font(.subheadline.monospacedDigit())
-                                    Text(String(format: "%.1f秒", recording.duration))
+                                    Text(recording.kindLabel + String(format: "%.1f秒", recording.duration))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -46,7 +46,7 @@ struct RecordingsView: View {
                     }
                     .onDelete(perform: delete)
                 } footer: {
-                    PhraseText("再生中は波形を表示します (横が時間、上下が録音したままの音の大きさ)。録音は1週間で自動的に削除されます。左にスワイプすると削除できます。")
+                    PhraseText("再生中は波形を表示します (横が時間、上下が録音したままの音の大きさ)。「物音」は、いびきに似ているものの途切れ途切れの音 (画面のタップの連続など) だったため、いびきに数えなかった音です。「休止中」は、iPhone を手に持って使っていたため、いびきに数えなかった音です。いびきを聞き逃していないかを確かめられるよう、どちらも録音しています。録音は1週間で自動的に削除されます。左にスワイプすると削除できます。")
                 }
             }
             .navigationTitle("録音したいびき")
