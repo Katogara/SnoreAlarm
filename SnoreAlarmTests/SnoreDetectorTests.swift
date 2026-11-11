@@ -544,6 +544,14 @@ final class NightRecordTests: XCTestCase {
         XCTAssertEqual(NightRecord.dayStart(containing: date(22, 12, 0), boundaryMinutes: 12 * 60, calendar: calendar), date(22, 12, 0))
     }
 
+    /// 開始と終了は、それぞれ見出しの日付と違う日のときだけ日付を添える
+    func testTimeNeedsDateOnlyOnOtherDay() {
+        let dayStart = date(21, 12, 0)
+        XCTAssertFalse(NightRecord.needsDate(date(21, 23, 0), dayStart: dayStart, calendar: calendar))
+        XCTAssertTrue(NightRecord.needsDate(date(22, 1, 0), dayStart: dayStart, calendar: calendar))
+        XCTAssertTrue(NightRecord.needsDate(date(22, 6, 0), dayStart: dayStart, calendar: calendar))
+    }
+
     /// 夜中に何度か止めて再開しても、午後の最初の開始から翌朝の最後の終了までを一晩にする
     func testRepeatedStopsInOneNightAreOneCycle() {
         let sessions = [
