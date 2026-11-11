@@ -101,9 +101,11 @@ struct NightView: View {
             VStack(spacing: 2) {
                 Text(night.dayStart.formatted(.dateTime.month().day().weekday()))
                     .font(.headline)
-                Text("\(night.start.formatted(date: .omitted, time: .shortened)) 〜 \(night.end.formatted(date: .omitted, time: .shortened))")
+                Text("\(Self.timeLabel(night.start, dayStart: night.dayStart)) 〜 \(Self.timeLabel(night.end, dayStart: night.dayStart))")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             Spacer()
 
@@ -428,6 +430,13 @@ struct NightView: View {
             guard let peak = recording.peakDB ?? measuredPeaks[recording.url] else { return nil }
             return Point(recording: recording, db: min(max(Double(peak), Double(Waveform.floorDB)), 0))
         }
+    }
+
+    /// 見出しの時刻: 見出しの日付と違う日なら「11月10日(火) 1:00」のように日付も出す
+    static func timeLabel(_ date: Date, dayStart: Date) -> String {
+        let time = date.formatted(date: .omitted, time: .shortened)
+        guard NightRecord.needsDate(date, dayStart: dayStart) else { return time }
+        return date.formatted(.dateTime.month().day().weekday()) + " " + time
     }
 
     /// グラフの線の色: いびきはアクセントの色、物音は灰色、休止中の音は紫
