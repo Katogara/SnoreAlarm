@@ -70,6 +70,11 @@ struct NightRecord: Identifiable {
         return calendar.date(byAdding: .day, value: -1, to: boundary) ?? boundary
     }
 
+    /// 見出しの日付 (夜が始まった日) と違う日の時刻なら、時刻に日付も添える
+    static func needsDate(_ date: Date, dayStart: Date, calendar: Calendar = .current) -> Bool {
+        !calendar.isDate(date, inSameDayAs: dayStart)
+    }
+
     /// 監視の記録・録音・振動を一晩ごとにまとめる (新しい夜が先)。
     /// - Parameter isMonitoring: 今監視中なら、終了していない最後の監視は今まで続いているものとする
     static func nights(sessions: [MonitoringSessionStore.Session], recordings: [RecordingStore.Recording],
