@@ -1,16 +1,24 @@
 import SwiftUI
 
-/// ショートカットアプリに「決まった時刻にいびきアラームの監視を始める」オートメーションを作る手順を、1画面ずつ絵を見せながら案内する
-/// (パケざんの案内と同じ作り。iOS 27 の画面に合わせている)。絵は実際の画面を写したものではなく、押す所が分かるように描いた見本
+/// ショートカットアプリに「夜の時間帯に、まだ監視していなければ、いびきアラームの監視を始める」仕組みを作る手順を、
+/// 1画面ずつ絵を見せながら案内する (パケざんの案内と同じ作り。iOS 27 の画面に合わせている)。
+/// 絵は実際の画面を写したものではなく、押す所が分かるように描いた見本。
+/// 前半でショートカット「いびきの見張り」(監視が必要か調べる → もし はい なら 監視を開始) を作り、
+/// 後半でそれを動かすオートメーション (アプリを開いたとき・充電器につないだとき・時刻) を作る。
+/// iPhone がロック中だとアプリを開けないため、ロックが解除されている場面をきっかけの中心にしている
 struct AutomationTutorialView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     /// ショートカットアプリと行き来しても続きから見られるよう、見ていたページを覚えておく
-    @AppStorage("automationTutorialPage") private var page = 0
-    @AppStorage(AlarmSettings.Key.automationStartMinutes) private var startMinutes = AlarmSettings.Default.automationStartMinutes
+    @AppStorage("automationTutorialPage2") private var page = 0
 
     /// 手順の数 (0 ページ目は前置き、最後のページは完了)
-    static let stepCount = 8
+    static let stepCount = 10
+    /// 作るショートカットの名前
+    static let shortcutName = "いびきの見張り"
+
+    /// 監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
+    private let window = AlarmSettings.load().schedule.nightWindow
 
     var body: some View {
         NavigationStack {
@@ -37,9 +45,14 @@ struct AutomationTutorialView: View {
         }
     }
 
-    /// 選んだ時刻 (例: 23:00)
-    private var timeText: String {
-        String(format: "%d:%02d", startMinutes / 60, startMinutes % 60)
+    /// 夜の時間帯 (例: 22:00〜5:00)
+    private var windowText: String {
+        "\(MonitoringSchedule.timeText(window.startMinutes))〜\(MonitoringSchedule.timeText(window.endMinutes))"
+    }
+
+    /// 時刻のきっかけにすすめる時刻 (夜の時間帯の始まりから 1 時間後と 2 時間後)
+    private var suggestedTimesText: String {
+        [60, 120].map { MonitoringSchedule.timeText((window.startMinutes + $0) % (24 * 60)) }.joined(separator: " と ")
     }
 
     // MARK: - ページ
@@ -48,14 +61,16 @@ struct AutomationTutorialView: View {
     private var content: some View {
         switch page {
         case 0: intro
-        case 1: openShortcuts
-        case 2: chooseAutomation
-        case 3: tapPlus
-        case 4: tapEdit
-        case 5: addAction
-        case 6: chooseTime
-        case 7: setTime
-        case 8: confirm
+        case 1: newShortcut
+        case 2: nameShortcut
+        case 3: addCheck
+        case 4: addIf
+        case 5: addStart
+        case 6: newAutomation
+        case 7: addShortcut
+        case 8: chooseApp
+        case 9: confirm
+        case 10: moreTriggers
         default: finished
         }
     }
@@ -67,35 +82,26 @@ struct AutomationTutorialView: View {
             Text("監視の始め忘れを防ぐ設定")
                 .font(.title2.bold())
                 .frame(maxWidth: .infinity)
-            PhraseText("iPhone の「ショートカット」アプリに、いびきアラームの監視を始める時刻を1つ登録します。その時刻になると、いびきアラームが自動で開いて監視を始めます。")
-            PhraseText("iPhone の決まりで、この登録だけはいびきアラームが代わりにできません。そのかわり、一度終われば、あとは毎日何もしなくて大丈夫です。")
-            VStack(alignment: .leading, spacing: 12) {
-                Text("監視を自動で始める時刻")
-                    .font(.headline)
-                DatePicker("監視を自動で始める時刻", selection: minutesBinding($startMinutes), displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity)
-                PhraseText("ふだん寝る少し前の時刻がおすすめです。すでに監視を始めていれば、その時刻になっても何も起きません。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-            .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 16))
+            PhraseText("寝る前に YouTube などのアプリを開いたとき、まだ監視していなければ、いびきアラームが自動で開いて監視を始めるようにします。")
+            PhraseText("自動で始めるのは、夜の時間帯（\(windowText)）だけです。昼間や、すでに監視しているときは何も起きません。")
+            PhraseText("iPhone がロックされているあいだは、iPhone の決まりでアプリを開けません。そのため、iPhone を触っている場面をきっかけにします。")
             VStack(alignment: .leading, spacing: 8) {
-                Label("かかる時間：3分ほど", systemImage: "clock")
-                Label("登録する時刻：\(timeText) の1つ", systemImage: "list.number")
+                Label("かかる時間：10分ほど", systemImage: "clock")
+                Label("作るもの：ショートカット1つと、オートメーション3つ", systemImage: "list.number")
             }
+            PhraseText("夜の時間帯は、設定の「寝る時刻のお知らせと自動終了」の時刻です。オフのときは 22:00〜5:00 です。")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             PhraseText("このガイドとショートカットアプリを行き来しながら進めます。いびきアラームに戻ってくると、続きのページから見られます。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
     }
 
-    private var openShortcuts: some View {
-        StepPage(title: "ショートカットアプリを開く",
-                 message: "下のボタンでショートカットアプリを開きます。「すべてのショートカット」の画面が出たら、左上の「＜」を押してください。",
-                 tip: "ほかの画面が出たときは、左上の「＜」を何回か押すと「ライブラリ」の画面に戻れます。") {
+    private var newShortcut: some View {
+        StepPage(title: "ショートカットを新しく作る",
+                 message: "下のボタンでショートカットアプリを開きます。「すべてのショートカット」の画面で「＋」を押してください。",
+                 tip: "ほかの画面が出たときは、左上の「＜」を何回か押して「ライブラリ」に戻り、「すべてのショートカット」を押してください。") {
             Button {
                 if let url = URL(string: "shortcuts://") { openURL(url) }
             } label: {
@@ -106,7 +112,7 @@ struct AutomationTutorialView: View {
             .controlSize(.large)
             MockScreen {
                 HStack {
-                    MockCircleButton(systemImage: "chevron.left").highlight()
+                    MockCircleButton(systemImage: "chevron.left")
                     Spacer()
                     MockPill(text: "選択")
                 }
@@ -118,43 +124,6 @@ struct AutomationTutorialView: View {
                             .frame(height: 44)
                     }
                 }
-            }
-        }
-    }
-
-    private var chooseAutomation: some View {
-        StepPage(title: "「オートメーション」を選ぶ",
-                 message: "「ライブラリ」の画面になります。並んでいる中から「オートメーション」を押してください。",
-                 tip: nil) {
-            MockScreen {
-                MockLargeTitle(text: "ライブラリ")
-                VStack(spacing: 0) {
-                    MockListRow(systemImage: "square.stack", text: "すべてのショートカット")
-                    MockListRow(systemImage: "square.and.arrow.up", text: "共有シート")
-                    MockListRow(systemImage: "square.grid.2x2", text: "ギャラリー")
-                    MockListRow(systemImage: "clock", text: "オートメーション").highlight()
-                }
-                .background(Mock.card, in: .rect(cornerRadius: 14))
-            }
-        }
-    }
-
-    private var tapPlus: some View {
-        StepPage(title: "下の「＋」を押す",
-                 message: "「オートメーション」の画面になったら、いちばん下のまん中にある「＋」を押します。",
-                 tip: "ほかのアプリのオートメーションがすでに並んでいても、そのまま「＋」を押して大丈夫です。") {
-            MockScreen {
-                HStack {
-                    MockCircleButton(systemImage: "chevron.left")
-                    Spacer()
-                    MockCircleButton(systemImage: "line.3.horizontal")
-                }
-                MockLargeTitle(text: "オートメーション")
-                Text("オートメーションなし")
-                    .font(.caption.bold())
-                    .foregroundStyle(Mock.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
                 MockCircleButton(systemImage: "plus", size: 46)
                     .highlight()
                     .frame(maxWidth: .infinity)
@@ -162,19 +131,20 @@ struct AutomationTutorialView: View {
         }
     }
 
-    private var tapEdit: some View {
-        StepPage(title: "右上の「編集」を押す",
-                 message: "「ショートカットでどのような操作を実行しますか？」と聞かれる画面が出ます。ここには何も入れず、右上の「編集」を押してください。",
-                 tip: "キーボードが出ても、文字は入れなくて大丈夫です。") {
+    private var nameShortcut: some View {
+        StepPage(title: "名前を「\(Self.shortcutName)」にする",
+                 message: "いちばん上の「新規ショートカット」を押し、「名前を変更」を選んで「\(Self.shortcutName)」と入れます（①）。名前を入れたら、右上の「編集」を押してください（②）。",
+                 tip: "名前はあとでオートメーションから探すときに使います。「みはり」と入れても探せます。") {
             MockScreen {
                 HStack {
                     MockCircleButton(systemImage: "chevron.left")
                     Spacer()
-                    Text("新規ショートカット")
+                    Text(Self.shortcutName)
                         .font(.caption.bold())
                         .foregroundStyle(Mock.text)
+                        .highlight(number: 1)
                     Spacer()
-                    MockPill(text: "編集").highlight()
+                    MockPill(text: "編集").highlight(number: 2)
                 }
                 Text("ショートカットでどのような操作を実行しますか？")
                     .font(.caption.bold())
@@ -188,28 +158,80 @@ struct AutomationTutorialView: View {
         }
     }
 
-    private var addAction: some View {
-        StepPage(title: "「監視を開始」を入れる",
-                 message: "画面の下にある検索欄を、指で上に引き出します。「いびき」と入れると出てくる「監視を開始」を押してください。",
+    private var addCheck: some View {
+        StepPage(title: "「監視が必要か調べる」を入れる",
+                 message: "画面の下にある検索欄を、指で上に引き出します。「いびき」と入れると出てくる「監視が必要か調べる」を押してください。",
                  tip: "検索欄は画面の下のふちに小さく隠れています。下のふちに指を置いて、上へすっとなぞると出てきます。") {
             MockScreen {
                 MockSheet {
                     MockSearchField(text: "いびき")
-                    HStack(spacing: 6) {
-                        MockChip(systemImage: "clock", text: "オートメーション")
-                        MockChip(systemImage: "curlybraces", text: "スクリプティング")
-                    }
-                    MockActionRow()
+                    MockNamedAction(title: "監視が必要か調べる")
+                        .highlight()
+                    MockNamedAction(title: "監視を開始")
+                }
+            }
+        }
+    }
+
+    private var addIf: some View {
+        StepPage(title: "「もし」を入れて条件を決める",
+                 message: "もう一度検索欄を引き出し、「もし」と入れて出てくる「もし」を押します。「もし 監視が必要 条件」の行が増えたら、「条件」を押して「が次と等しい」を選び、右の値を「はい」にしてください。",
+                 tip: "条件や値の言葉が少し違うときは、「等しい」「はい」「オン」「真」に近いものを選んでください。") {
+            MockScreen {
+                MockNamedAction(title: "監視が必要か調べる")
+                MockIfBlock(condition: "条件", highlightsCondition: true, inner: nil)
+            }
+        }
+    }
+
+    private var addStart: some View {
+        StepPage(title: "「監視を開始」を「もし」の中に入れる",
+                 message: "検索欄で「いびき」と入れて「監視を開始」を押します。いちばん下に入るので、長押ししたまま上へ動かし、「もし」のすぐ下（「その他」より上）に置いてください。",
+                 tip: "置けたら、左上の「＜」でショートカットの一覧に戻ります。これで「\(Self.shortcutName)」ができました。") {
+            MockScreen {
+                MockNamedAction(title: "監視が必要か調べる")
+                MockIfBlock(condition: "はい", highlightsCondition: false, inner: "監視を開始")
+            }
+        }
+    }
+
+    private var newAutomation: some View {
+        StepPage(title: "オートメーションを新しく作る",
+                 message: "左上の「＜」を押して「ライブラリ」に戻り、「オートメーション」を押します（①）。いちばん下のまん中の「＋」を押し（②）、出てきた画面で右上の「編集」を押してください。",
+                 tip: "ほかのアプリのオートメーションがすでに並んでいても、そのまま「＋」を押して大丈夫です。以前このガイドで作った、時刻に「監視を開始」するオートメーションは、ここで消してください（左にすべらせると消せます）。") {
+            MockScreen {
+                MockLargeTitle(text: "ライブラリ")
+                VStack(spacing: 0) {
+                    MockListRow(systemImage: "square.stack", text: "すべてのショートカット")
+                    MockListRow(systemImage: "square.grid.2x2", text: "ギャラリー")
+                    MockListRow(systemImage: "clock", text: "オートメーション").highlight(number: 1)
+                }
+                .background(Mock.card, in: .rect(cornerRadius: 14))
+                MockCircleButton(systemImage: "plus", size: 46)
+                    .highlight(number: 2)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private var addShortcut: some View {
+        StepPage(title: "「\(Self.shortcutName)」を入れる",
+                 message: "検索欄を引き出して「みはり」と入れ、出てくる「\(Self.shortcutName)」を押してください。",
+                 tip: "出てこないときは、ショートカットの名前が「\(Self.shortcutName)」になっているかを確かめてください。") {
+            MockScreen {
+                MockSheet {
+                    MockSearchField(text: "みはり")
+                    MockNamedAction(title: Self.shortcutName)
                         .highlight()
                 }
             }
         }
     }
 
-    private var chooseTime: some View {
-        StepPage(title: "「時刻」を選ぶ",
-                 message: "もう一度検索欄を引き出し、青い「オートメーション」を押します（①）。続いて、いちばん上の「時刻」を押してください（②）。",
-                 tip: "「いびき」の文字が残っていたら、検索欄の右の「×」で消してから押してください。") {
+    private var chooseApp: some View {
+        StepPage(title: "きっかけを「App」にする",
+                 message: "もう一度検索欄を引き出し、青い「オートメーション」を押して（①）、「App」を押します（②）。「App」を押して、寝る前によく使うアプリ（YouTube、X、LINE など）をすべて選び、「開いている」に印を付けてください。",
+                 tip: "「閉じている」には印を付けません。いびきアラーム自身は選ばないでください。") {
             MockScreen {
                 MockSheet {
                     MockSearchField(text: "")
@@ -217,68 +239,24 @@ struct AutomationTutorialView: View {
                         MockChip(systemImage: "clock", text: "オートメーション").highlight(number: 1)
                         MockChip(systemImage: "curlybraces", text: "スクリプティング")
                     }
-                    Text("日ごろの行動")
-                        .font(.caption.bold())
-                        .foregroundStyle(Mock.text)
                     VStack(spacing: 6) {
-                        MockTriggerRow(color: .orange, title: "時刻", example: "“平日の午前8:00”").highlight(number: 2)
-                        MockTriggerRow(color: .orange, title: "アラーム", example: "“アラームが止まったとき”")
+                        MockTriggerRow(color: .orange, title: "時刻", example: "“平日の午前8:00”")
+                        MockTriggerRow(color: .blue, title: "App", example: "“YouTube が開いているとき”").highlight(number: 2)
+                        MockTriggerRow(color: .green, title: "充電器", example: "“充電器に接続されたとき”")
                     }
                 }
             }
         }
     }
 
-    private var setTime: some View {
-        StepPage(title: "時刻を \(timeText) にする",
-                 message: "上に「時間 に ＞」の行が増えます。うすい青の「時間」を押して、\(startMinutes / 60) と \(String(format: "%02d", startMinutes % 60)) に合わせてください。",
-                 tip: "時刻を回す所は、左が「時」、右が「分」です。") {
-            MockScreen {
-                Text("このオートメーションを有効にするには、「時間」を構成してください。")
-                    .font(.caption2)
-                    .foregroundStyle(Mock.text)
-                    .padding(8)
-                    .background(Color(white: 0.88), in: .rect(cornerRadius: 12))
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.fill")
-                        .foregroundStyle(Mock.secondary)
-                    Text("時間")
-                        .font(.callout)
-                        .foregroundStyle(Mock.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Mock.blue.opacity(0.15), in: .rect(cornerRadius: 8))
-                        .highlight()
-                    Text("に")
-                        .font(.callout.bold())
-                        .foregroundStyle(Mock.text)
-                    Image(systemName: "chevron.right.circle")
-                        .foregroundStyle(Mock.blue)
-                    Spacer()
-                }
-                HStack(spacing: 28) {
-                    Text("\(startMinutes / 60)")
-                    Text(String(format: "%02d", startMinutes % 60))
-                }
-                .font(.title2.monospacedDigit())
-                .foregroundStyle(Mock.text)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(Color(white: 0.9), in: .capsule)
-                MockActionRow()
-            }
-        }
-    }
-
     private var confirm: some View {
-        StepPage(title: "最後に確かめる",
-                 message: "時刻の右にある「＞」を押します。「繰り返し」が「毎日」、「オートメーション」がオンになっていれば大丈夫です。",
-                 tip: "「通知」はオフのままで大丈夫です。") {
+        StepPage(title: "すぐに実行するようにする",
+                 message: "きっかけの行の右にある「＞」を押します。「すぐに実行」になっていて、「オートメーション」がオンなら大丈夫です。",
+                 tip: "「実行前に確認」になっていたら「すぐに実行」に変えてください。「通知」はオフのままで大丈夫です。") {
             MockScreen {
-                MockTimeRow(time: timeText)
                 VStack(spacing: 0) {
-                    MockSettingRow(title: "予定") { Text("時刻").foregroundStyle(Mock.blue) }
-                    MockSettingRow(title: "繰り返し") { Text("毎日").foregroundStyle(Mock.blue) }
+                    MockSettingRow(title: "App") { Text("YouTube ほか").foregroundStyle(Mock.blue) }
+                    MockSettingRow(title: "すぐに実行") { Image(systemName: "checkmark").foregroundStyle(Mock.blue) }
                         .highlight(showsHand: false)
                     MockSettingRow(title: "オートメーション") { MockToggle(isOn: true) }
                         .highlight(showsHand: false)
@@ -286,7 +264,28 @@ struct AutomationTutorialView: View {
                 }
                 .background(Mock.card, in: .rect(cornerRadius: 14))
             }
-            PhraseText("確かめたら、左上の「＜」で戻ります。「オートメーション」の一覧に出ていれば完成です。")
+            PhraseText("確かめたら、左上の「＜」で戻ります。「オートメーション」の一覧に出ていれば、1つ目のオートメーションの完成です。")
+        }
+    }
+
+    private var moreTriggers: some View {
+        StepPage(title: "残りの2つも作る",
+                 message: "手順 6〜9 をもう2回くり返し、きっかけだけを変えたオートメーションを作ります。",
+                 tip: "時刻のきっかけは、iPhone がロックされていると失敗します（失敗の通知が出ます）。そのときにスマホを触っていれば、監視を始められます。") {
+            VStack(alignment: .leading, spacing: 12) {
+                Label {
+                    PhraseText("2つ目：「充電器」を選び、「接続されている」にします。寝る前に手に持ったまま充電器につないだときに働きます。")
+                } icon: {
+                    Image(systemName: "battery.100.bolt")
+                }
+                Label {
+                    PhraseText("3つ目：「時刻」を選び、\(suggestedTimesText) のように、夜の時間帯の中の時刻にします。「繰り返し」は「毎日」です。時刻ごとに1つずつ作ります。")
+                } icon: {
+                    Image(systemName: "clock")
+                }
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 16))
         }
     }
 
@@ -297,13 +296,13 @@ struct AutomationTutorialView: View {
             Text("おつかれさまでした！")
                 .font(.title2.bold())
                 .frame(maxWidth: .infinity)
-            PhraseText("設定はこれでおしまいです。毎日 \(timeText) になると、いびきアラームが開いて監視を始めます。")
+            PhraseText("設定はこれでおしまいです。夜の時間帯（\(windowText)）に、まだ監視していないままきっかけのアプリを開くと、いびきアラームが開いて監視を始めます。")
             VStack(alignment: .leading, spacing: 10) {
                 Label("知っておいてほしいこと", systemImage: "info.circle")
                     .font(.headline)
-                PhraseText("・その時刻にほかのアプリを使っていても、いびきアラームの画面に切り替わります。")
+                PhraseText("・いびきアラームの画面に切り替わったあと、元のアプリには自分で戻ってください。監視は続きます。")
                 PhraseText("・iPhone を手に持っているあいだは、いびきを数えません。iPhone を置いて\(Int(SnoreMonitor.resumeAfterStill / 60))分たつか、画面をロックして\(Int(SnoreMonitor.resumeAfterLock / 60))分たつと数え始めます。")
-                PhraseText("・時刻を変えたいときは、ショートカットアプリのオートメーションの時刻を変えてください。いびきアラームの設定の時刻は、このガイドに出すためのものです。")
+                PhraseText("・夜の時間帯に一度も iPhone を触らなかった夜は、自動では始められません。その夜の翌朝 \(MonitoringSchedule.timeText(window.endMinutes)) に「昨夜は監視していませんでした」とお知らせします。")
             }
             .padding()
             .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 16))
@@ -347,6 +346,82 @@ struct AutomationTutorialView: View {
         if page == 0 { return "はじめる" }
         if page == Self.stepCount { return "できた！" }
         return page > Self.stepCount ? "とじる" : "次へ"
+    }
+}
+
+/// 入れたアクションの行 (名前を指定)
+private struct MockNamedAction: View {
+    let title: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            AppMark(size: 24)
+            Text(title)
+                .font(.callout.bold())
+                .foregroundStyle(Mock.text)
+            Spacer()
+        }
+        .padding(10)
+        .background(Mock.card, in: .capsule)
+    }
+}
+
+/// 「もし」のかたまり (もし 〜 / 中のアクション / その他 / もし終了)
+private struct MockIfBlock: View {
+    let condition: String
+    let highlightsCondition: Bool
+    /// 「もし」の中に入れたアクションの名前
+    let inner: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.triangle.branch")
+                    .foregroundStyle(Mock.secondary)
+                Text("もし")
+                    .font(.callout.bold())
+                    .foregroundStyle(Mock.text)
+                Text("監視が必要")
+                    .font(.caption)
+                    .foregroundStyle(Mock.blue)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Mock.blue.opacity(0.12), in: .rect(cornerRadius: 6))
+                conditionText
+                Spacer()
+            }
+            .padding(10)
+            .background(Mock.card, in: .rect(cornerRadius: 14))
+            if let inner {
+                MockNamedAction(title: inner)
+                    .padding(.leading, 18)
+                    .highlight()
+            }
+            Text("その他")
+                .font(.callout.bold())
+                .foregroundStyle(Mock.text)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Mock.card, in: .rect(cornerRadius: 14))
+            Text("もし終了")
+                .font(.callout.bold())
+                .foregroundStyle(Mock.secondary)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Mock.card, in: .rect(cornerRadius: 14))
+        }
+    }
+
+    @ViewBuilder
+    private var conditionText: some View {
+        let text = Text(condition)
+            .font(.caption)
+            .foregroundStyle(Mock.blue)
+        if highlightsCondition {
+            text.highlight()
+        } else {
+            text
+        }
     }
 }
 

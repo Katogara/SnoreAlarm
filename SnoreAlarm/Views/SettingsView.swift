@@ -15,8 +15,14 @@ struct SettingsView: View {
     @AppStorage(AlarmSettings.Key.scheduleEndMinutes) private var scheduleEndMinutes = AlarmSettings.Default.scheduleEndMinutes
     @AppStorage(AlarmSettings.Key.dayBoundaryMinutes) private var dayBoundaryMinutes = AlarmSettings.Default.dayBoundaryMinutes
     @AppStorage(AlarmSettings.Key.watchFallback) private var watchFallback = AlarmSettings.Default.watchFallback
-    @AppStorage(AlarmSettings.Key.automationStartMinutes) private var automationStartMinutes = AlarmSettings.Default.automationStartMinutes
     @State private var showingAutomation = false
+
+    /// ショートカットで監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
+    private var nightWindowText: String {
+        let window = MonitoringSchedule(isOn: scheduleEnabled, startMinutes: scheduleStartMinutes,
+                                        endMinutes: scheduleEndMinutes).nightWindow
+        return "\(MonitoringSchedule.timeText(window.startMinutes))〜\(MonitoringSchedule.timeText(window.endMinutes))"
+    }
 
     var body: some View {
         NavigationStack {
@@ -91,14 +97,11 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Button {
+                    Button("自動で監視を始める") {
                         showingAutomation = true
-                    } label: {
-                        LabeledContent("自動で監視を始める",
-                                       value: String(format: "%d:%02d", automationStartMinutes / 60, automationStartMinutes % 60))
                     }
                 } footer: {
-                    PhraseText("iPhone の「ショートカット」アプリに登録しておくと、毎日決まった時刻にいびきアラームが開いて監視を始めます。押すと登録の手順を案内します。時刻を変えたときは、ショートカットアプリのオートメーションの時刻も変えてください。")
+                    PhraseText("iPhone の「ショートカット」アプリに登録しておくと、夜の時間帯（\(nightWindowText)）に YouTube などのアプリを開いたとき、まだ監視していなければ、いびきアラームが開いて監視を始めます。押すと登録の手順を案内します。監視しなかった夜は、翌朝にお知らせします。")
                 }
 
                 Section {
