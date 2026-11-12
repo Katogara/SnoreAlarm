@@ -6,7 +6,8 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    # 2026-11-12、macos-15 (arm64) が混んでいて 15 分待っても始まらず打ち切られたため、Intel 版にした
+    runs-on: macos-15-intel
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
