@@ -174,23 +174,23 @@ struct AutomationTutorialView: View {
     }
 
     private var addIf: some View {
-        StepPage(title: "「もし」を入れて条件を決める",
-                 message: "もう一度検索欄を引き出し、「もし」と入れて出てくる「もし」を押します。「もし 監視が必要 条件」の行が増えたら、「条件」を押して「が次と等しい」を選び、右の値を「はい」にしてください。",
+        StepPage(title: "「if文」を入れて条件を決める",
+                 message: "もう一度検索欄を引き出し、「if」と入れて出てくる「if文」を押します。行が増えたら、条件の部分を押して「次と等しい」を選び、値を「はい」にしてください。下の絵のように「監視が必要か調べる が 次と等しい はい の場合」となれば大丈夫です。",
                  tip: "条件や値の言葉が少し違うときは、「等しい」「はい」「オン」「真」に近いものを選んでください。") {
             MockScreen {
                 MockNamedAction(title: "監視が必要か調べる")
-                MockIfBlock(condition: "条件", highlightsCondition: true, inner: nil)
+                MockIfBlock(highlightsCondition: true, inner: nil)
             }
         }
     }
 
     private var addStart: some View {
-        StepPage(title: "「監視を開始」を「もし」の中に入れる",
-                 message: "検索欄で「いびき」と入れて「監視を開始」を押します。いちばん下に入るので、長押ししたまま上へ動かし、「もし」のすぐ下（「その他」より上）に置いてください。",
+        StepPage(title: "「監視を開始」を「if文」の中に入れる",
+                 message: "検索欄で「いびき」と入れて「監視を開始」を押します。いちばん下に入るので、長押ししたまま上へ動かし、「〜の場合」のすぐ下（「その他の場合」より上）に置いてください。",
                  tip: "置けたら、左上の「＜」でショートカットの一覧に戻ります。これで「\(Self.shortcutName)」ができました。") {
             MockScreen {
                 MockNamedAction(title: "監視が必要か調べる")
-                MockIfBlock(condition: "はい", highlightsCondition: false, inner: "監視を開始")
+                MockIfBlock(highlightsCondition: false, inner: "監視を開始")
             }
         }
     }
@@ -216,14 +216,16 @@ struct AutomationTutorialView: View {
 
     private var addShortcut: some View {
         StepPage(title: "「\(Self.shortcutName)」を入れる",
-                 message: "検索欄を引き出して「みはり」と入れ、出てくる「\(Self.shortcutName)」を押してください。",
-                 tip: "出てこないときは、ショートカットの名前が「\(Self.shortcutName)」になっているかを確かめてください。") {
+                 message: "検索欄を引き出して「ショートカットを実行」と入れ、出てくる「ショートカットを実行」を押します（①）。行が増えたら、行の中の薄い青の「ショートカット」を押し、一覧から「\(Self.shortcutName)」を選んでください（②）。",
+                 tip: "一覧に出てこないときは、手順 2 で付けた名前が「\(Self.shortcutName)」になっているかを確かめてください。") {
             MockScreen {
                 MockSheet {
-                    MockSearchField(text: "みはり")
-                    MockNamedAction(title: Self.shortcutName)
-                        .highlight()
+                    MockSearchField(text: "ショートカットを実行")
+                    MockRunShortcutRow(target: "ショートカット", isAction: false)
+                        .highlight(number: 1)
                 }
+                MockRunShortcutRow(target: Self.shortcutName, isAction: true)
+                    .highlight(number: 2)
             }
         }
     }
@@ -366,29 +368,67 @@ private struct MockNamedAction: View {
     }
 }
 
-/// 「もし」のかたまり (もし 〜 / 中のアクション / その他 / もし終了)
-private struct MockIfBlock: View {
-    let condition: String
-    let highlightsCondition: Bool
-    /// 「もし」の中に入れたアクションの名前
-    let inner: String?
+/// 「ショートカットを実行」の行 (検索の結果、または入れたあとの行)
+private struct MockRunShortcutRow: View {
+    /// 実行するショートカット (まだ選んでいないときは「ショートカット」)
+    let target: String
+    /// 入れたあとの行なら true (「〜を実行」の形で出す)
+    let isAction: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.triangle.branch")
-                    .foregroundStyle(Mock.secondary)
-                Text("もし")
-                    .font(.callout.bold())
-                    .foregroundStyle(Mock.text)
-                Text("監視が必要")
+        HStack(spacing: 6) {
+            Image(systemName: "square.stack.3d.up.fill")
+                .font(.caption)
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Color.blue.gradient, in: .rect(cornerRadius: 6))
+            if isAction {
+                Text(target)
                     .font(.caption)
                     .foregroundStyle(Mock.blue)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
                     .background(Mock.blue.opacity(0.12), in: .rect(cornerRadius: 6))
+                Text("を実行")
+                    .font(.callout.bold())
+                    .foregroundStyle(Mock.text)
+            } else {
+                Text("ショートカットを実行")
+                    .font(.callout.bold())
+                    .foregroundStyle(Mock.text)
+            }
+            Spacer()
+        }
+        .padding(10)
+        .background(Mock.card, in: .capsule)
+    }
+}
+
+/// 「if文」のかたまり (〜の場合 / 中のアクション / その他の場合 / If文の終了)
+private struct MockIfBlock: View {
+    let highlightsCondition: Bool
+    /// 「if文」の中に入れたアクションの名前
+    let inner: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.triangle.branch")
+                    .foregroundStyle(Mock.secondary)
+                Text("監視が必要か調べる")
+                    .font(.caption)
+                    .foregroundStyle(Mock.blue)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Mock.blue.opacity(0.12), in: .rect(cornerRadius: 6))
+                Text("が")
+                    .font(.caption.bold())
+                    .foregroundStyle(Mock.text)
                 conditionText
-                Spacer()
+                Text("の場合")
+                    .font(.caption.bold())
+                    .foregroundStyle(Mock.text)
+                Spacer(minLength: 0)
             }
             .padding(10)
             .background(Mock.card, in: .rect(cornerRadius: 14))
@@ -397,13 +437,13 @@ private struct MockIfBlock: View {
                     .padding(.leading, 18)
                     .highlight()
             }
-            Text("その他")
+            Text("その他の場合")
                 .font(.callout.bold())
                 .foregroundStyle(Mock.text)
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Mock.card, in: .rect(cornerRadius: 14))
-            Text("もし終了")
+            Text("If文の終了")
                 .font(.callout.bold())
                 .foregroundStyle(Mock.secondary)
                 .padding(10)
@@ -414,9 +454,17 @@ private struct MockIfBlock: View {
 
     @ViewBuilder
     private var conditionText: some View {
-        let text = Text(condition)
-            .font(.caption)
-            .foregroundStyle(Mock.blue)
+        let text = HStack(spacing: 4) {
+            Text("次と等しい")
+                .font(.caption.bold())
+                .foregroundStyle(Mock.text)
+            Text("はい")
+                .font(.caption)
+                .foregroundStyle(Mock.blue)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Mock.blue.opacity(0.12), in: .rect(cornerRadius: 6))
+        }
         if highlightsCondition {
             text.highlight()
         } else {
