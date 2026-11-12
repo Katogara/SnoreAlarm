@@ -469,6 +469,53 @@ final class MonitoringScheduleTests: XCTestCase {
         XCTAssertFalse(MonitoringSchedule(isOn: true, startMinutes: 7 * 60, endMinutes: 7 * 60).isEnabled)
     }
 
+    /// ショートカットで監視を自動で始める夜の時間帯: お知らせ・自動終了がオフなら 22:00〜5:00、オンならその時刻
+    func testNightWindowAndNeedsMonitoring() {
+        let off = MonitoringSchedule(isOn: false, startMinutes: 23 * 60, endMinutes: 7 * 60)
+        XCTAssertEqual(off.nightWindow, MonitoringSchedule(isOn: true, startMinutes: 22 * 60, endMinutes: 5 * 60))
+        XCTAssertTrue(off.needsMonitoring(at: date(21, 23, 10), isMonitoring: false, calendar: calendar))
+        XCTAssertTrue(off.needsMonitoring(at: date(22, 4, 59), isMonitoring: false, calendar: calendar))
+        // 昼間と、すでに監視中のときは不要
+        XCTAssertFalse(off.needsMonitoring(at: date(21, 14, 0), isMonitoring: false, calendar: calendar))
+        XCTAssertFalse(off.needsMonitoring(at: date(22, 5, 0), isMonitoring: false, calendar: calendar))
+        XCTAssertFalse(off.needsMonitoring(at: date(21, 23, 10), isMonitoring: true, calendar: calendar))
+
+        let on = MonitoringSchedule(isOn: true, startMinutes: 23 * 60, endMinutes: 7 * 60)
+        XCTAssertEqual(on.nightWindow, on)
+        XCTAssertFalse(on.needsMonitoring(at: date(21, 22, 30), isMonitoring: false, calendar: calendar))
+        XCTAssertTrue(on.needsMonitoring(at: date(22, 6, 0), isMonitoring: false, calendar: calendar))
+        // 開始と終了が同じ時刻なら使えないので 22:00〜5:00
+        XCTAssertEqual(MonitoringSchedule(isOn: true, startMinutes: 7 * 60, endMinutes: 7 * 60).nightWindow.startMinutes, 22 * 60)
+    }
+
+    /// 「昨夜は監視していませんでした」は夜の時間帯の終了時刻に出し、夜の時間帯に少しでも監視した夜は出さない
+    func testMissedNightDates() {
+        let schedule = MonitoringSchedule(isOn: true, startMinutes: 22 * 60, endMinutes: 6 * 60)
+        typealias Session = MonitoringSessionStore.Session
+        // 監視なし: 毎朝 6:00 に 7 日分
+        let none = schedule.missedNightDates(after: date(21, 12, 0), sessions: [], isMonitoring: false, calendar: calendar)
+        XCTAssertEqual(none.count, 7)
+        XCTAssertEqual(none.first, date(22, 6, 0))
+        XCTAssertEqual(none.last, date(28, 6, 0))
+
+        // 今夜 23:10 から監視中: 明朝の分は出さず、次の朝から
+        let ongoing = [Session(start: date(21, 23, 10), lastSeen: date(21, 23, 30))]
+        XCTAssertEqual(schedule.missedNightDates(after: date(21, 23, 30), sessions: ongoing, isMonitoring: true,
+                                                 calendar: calendar).first, date(23, 6, 0))
+        // 夜中の 2:00 に自分で止めても、その夜は監視したとみなす
+        let stopped = [Session(start: date(21, 23, 10), end: date(22, 2, 0))]
+        XCTAssertEqual(schedule.missedNightDates(after: date(22, 2, 0), sessions: stopped, isMonitoring: false,
+                                                 calendar: calendar).first, date(23, 6, 0))
+        // 夜の時間帯の前 (21:00〜21:50) だけの監視は、その夜の監視に数えない
+        let early = [Session(start: date(21, 21, 0), end: date(21, 21, 50))]
+        XCTAssertEqual(schedule.missedNightDates(after: date(21, 21, 50), sessions: early, isMonitoring: false,
+                                                 calendar: calendar).first, date(22, 6, 0))
+        // 21:30 に始めて夜通し続けた監視は数える
+        let throughNight = [Session(start: date(21, 21, 30), lastSeen: date(21, 22, 0))]
+        XCTAssertEqual(schedule.missedNightDates(after: date(21, 22, 0), sessions: throughNight, isMonitoring: true,
+                                                 calendar: calendar).first, date(23, 6, 0))
+    }
+
     func testSettingsLoadSchedule() {
         let defaults = UserDefaults(suiteName: UUID().uuidString)!
         XCTAssertEqual(AlarmSettings.load(from: defaults).schedule,
