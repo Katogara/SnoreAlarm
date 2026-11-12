@@ -231,9 +231,9 @@ struct AutomationTutorialView: View {
     }
 
     private var chooseApp: some View {
-        StepPage(title: "きっかけを「App」にする",
-                 message: "もう一度検索欄を引き出し、青い「オートメーション」を押して（①）、「App」を押します（②）。「App」を押して、寝る前によく使うアプリ（YouTube、X、LINE など）をすべて選び、「開いている」に印を付けてください。",
-                 tip: "「閉じている」には印を付けません。いびきアラーム自身は選ばないでください。") {
+        StepPage(title: "きっかけを「アプリ」にする",
+                 message: "もう一度検索欄を引き出し、青い「オートメーション」を押します（①）。下へ送り、「アプリ」の欄にある「アプリ」を押してください（②）。いちばん上に行が増えたら、行の中のアプリの名前を押して、寝る前によく使うアプリ（YouTube、Kindle など）をすべて選びます。",
+                 tip: "いびきアラーム自身は選ばないでください。") {
             MockScreen {
                 MockSheet {
                     MockSearchField(text: "")
@@ -242,9 +242,8 @@ struct AutomationTutorialView: View {
                         MockChip(systemImage: "curlybraces", text: "スクリプティング")
                     }
                     VStack(spacing: 6) {
-                        MockTriggerRow(color: .orange, title: "時刻", example: "“平日の午前8:00”")
-                        MockTriggerRow(color: .blue, title: "App", example: "“YouTube が開いているとき”").highlight(number: 2)
-                        MockTriggerRow(color: .green, title: "充電器", example: "“充電器に接続されたとき”")
+                        MockTriggerRow(color: .gray, title: "アプリ", example: "“‘天気’が開かれたかまたは閉じられたとき”").highlight(number: 2)
+                        MockTriggerRow(color: .gray, title: "充電器", example: "“このデバイスが電源に接続されたとき”")
                     }
                 }
             }
@@ -252,19 +251,37 @@ struct AutomationTutorialView: View {
     }
 
     private var confirm: some View {
-        StepPage(title: "すぐに実行するようにする",
-                 message: "きっかけの行の右にある「＞」を押します。「すぐに実行」になっていて、「オートメーション」がオンなら大丈夫です。",
-                 tip: "「実行前に確認」になっていたら「すぐに実行」に変えてください。「通知」はオフのままで大丈夫です。") {
+        StepPage(title: "「開いた」ときにする",
+                 message: "行の中の「開いたまたは閉じた」を押し、「開いた」を選びます（①）。次に、行の右の「⌄」を押して、「オートメーション」がオンになっているかを確かめてください（②）。",
+                 tip: "「通知」はオフのままで大丈夫です。") {
             MockScreen {
-                VStack(spacing: 0) {
-                    MockSettingRow(title: "App") { Text("YouTube ほか").foregroundStyle(Mock.blue) }
-                    MockSettingRow(title: "すぐに実行") { Image(systemName: "checkmark").foregroundStyle(Mock.blue) }
-                        .highlight(showsHand: false)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 4) {
+                        Text("YouTube ほか")
+                            .font(.caption)
+                            .foregroundStyle(Mock.blue)
+                        Text("が")
+                            .font(.caption.bold())
+                            .foregroundStyle(Mock.text)
+                        Text("開いた")
+                            .font(.caption)
+                            .foregroundStyle(Mock.blue)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Mock.blue.opacity(0.12), in: .rect(cornerRadius: 6))
+                            .highlight(number: 1)
+                        Text("とき")
+                            .font(.caption.bold())
+                            .foregroundStyle(Mock.text)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(10)
                     MockSettingRow(title: "オートメーション") { MockToggle(isOn: true) }
-                        .highlight(showsHand: false)
+                        .highlight(number: 2)
                     MockSettingRow(title: "通知") { MockToggle(isOn: false) }
                 }
                 .background(Mock.card, in: .rect(cornerRadius: 14))
+                MockRunShortcutRow(target: Self.shortcutName, isAction: true)
             }
             PhraseText("確かめたら、左上の「＜」で戻ります。「オートメーション」の一覧に出ていれば、1つ目のオートメーションの完成です。")
         }
@@ -276,12 +293,12 @@ struct AutomationTutorialView: View {
                  tip: "時刻のきっかけは、iPhone がロックされていると失敗します（失敗の通知が出ます）。そのときにスマホを触っていれば、監視を始められます。") {
             VStack(alignment: .leading, spacing: 12) {
                 Label {
-                    PhraseText("2つ目：「充電器」を選び、「接続されている」にします。寝る前に手に持ったまま充電器につないだときに働きます。")
+                    PhraseText("2つ目：「電力」の欄にある「充電器」を選び、電源に「接続された」ときにします。寝る前に手に持ったまま充電器につないだときに働きます。")
                 } icon: {
                     Image(systemName: "battery.100.bolt")
                 }
                 Label {
-                    PhraseText("3つ目：「時刻」を選び、\(suggestedTimesText) のように、夜の時間帯の中の時刻にします。「繰り返し」は「毎日」です。時刻ごとに1つずつ作ります。")
+                    PhraseText("3つ目：「時刻」を選び、\(suggestedTimesText) のように、夜の時間帯の中の時刻にします。毎日動くようにしてください。時刻ごとに1つずつ作ります。")
                 } icon: {
                     Image(systemName: "clock")
                 }
