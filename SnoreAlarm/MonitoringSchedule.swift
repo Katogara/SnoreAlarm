@@ -80,6 +80,8 @@ struct MonitoringSchedule: Equatable {
     func missedNightDates(after now: Date, sessions: [MonitoringSessionStore.Session], isMonitoring: Bool,
                           days: Int = 7, calendar: Calendar = .current) -> [Date] {
         let window = nightWindow
+        // 今続いている監視は、今夜の終了時刻まで続くものとみなす (止めたら予約し直すので、次の夜からは知らせを出す)
+        let ongoingEnd = window.nextEnd(after: now, calendar: calendar) ?? now
         var dates: [Date] = []
         var after = now
         for _ in 0..<days {
@@ -89,7 +91,7 @@ struct MonitoringSchedule: Equatable {
             let monitored = sessions.indices.contains { index in
                 let session = sessions[index]
                 let sessionEnd = session.end
-                    ?? (isMonitoring && index == sessions.count - 1 ? .distantFuture : (session.lastSeen ?? session.start))
+                    ?? (isMonitoring && index == sessions.count - 1 ? ongoingEnd : (session.lastSeen ?? session.start))
                 return session.start < end && sessionEnd > start
             }
             if !monitored {
