@@ -8,6 +8,9 @@ private enum NotificationID {
     /// 寝る時刻のお知らせ (1 日 4 回 × 7 日)
     static let maxReminders = 28
     static func reminder(_ index: Int) -> String { "bedtimeReminder-\(index)" }
+    /// 「昨夜は監視していませんでした」の知らせ (1 日 1 回 × 7 日)
+    static let maxMissedNights = 7
+    static func missedNight(_ index: Int) -> String { "missedNight-\(index)" }
     /// 以前の版の「自動開始できませんでした」のお知らせ (残っていれば消す)
     static let legacyReminders = (0..<7).map { "scheduleReminder-\($0)" }
     static let watchAlertPrefix = "watchAlert-"
@@ -123,6 +126,21 @@ final class AlarmNotifier: NSObject, UNUserNotificationCenterDelegate {
             content.categoryIdentifier = NotificationID.reminderCategory
             let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
             center.add(UNNotificationRequest(identifier: NotificationID.reminder(index), content: content,
+                                             trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
+        }
+    }
+
+    /// 「昨夜は監視していませんでした」の知らせを予約し直す。監視を始めたら呼び直して、その夜の分を取り消す。
+    /// 朝早い時刻に出ることがあるので、通知音は鳴らさない
+    func scheduleMissedNightNotices(at dates: [Date]) {
+        center.removePendingNotificationRequests(withIdentifiers: (0..<NotificationID.maxMissedNights).map(NotificationID.missedNight))
+        for (index, date) in dates.prefix(NotificationID.maxMissedNights).enumerated() {
+            let content = UNMutableNotificationContent()
+            content.title = "昨夜は監視していませんでした"
+            content.body = Phrases.wrapped("夜のあいだに監視が始まりませんでした。夜の時間帯に一度も iPhone を触らなかった夜は、ショートカットでも自動で始められません。")
+            content.sound = nil
+            let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
+            center.add(UNNotificationRequest(identifier: NotificationID.missedNight(index), content: content,
                                              trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
         }
     }

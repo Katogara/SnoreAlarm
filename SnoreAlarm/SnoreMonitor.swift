@@ -430,10 +430,34 @@ final class SnoreMonitor {
         }
     }
 
-    /// 寝る時刻のお知らせを予約し直す。監視中はその夜の残りのお知らせを出さない。
+    /// 寝る時刻のお知らせと、「昨夜は監視していませんでした」の知らせを予約し直す。
+    /// 監視中はその夜の残りのお知らせを出さず、監視した夜の翌朝の知らせも出さない。
     private func updateReminders() {
-        let monitoringUntil = (state != .idle && !isDemo) ? scheduledEnd : nil
+        let isMonitoring = state != .idle && !isDemo
+        let monitoringUntil = isMonitoring ? scheduledEnd : nil
         notifier.scheduleReminders(at: schedule.reminderDates(after: Date(), monitoringUntil: monitoringUntil))
+        // 翌朝の知らせは、ショートカットで監視を自動で始める設定をした人にだけ出す
+        // (「監視が必要か調べる」が一度でも動いたことで、設定したと判断する)
+        let usesAutomation = UserDefaults.standard.object(forKey: AlarmSettings.Key.automationCheckedAt) != nil
+        notifier.scheduleMissedNightNotices(at: usesAutomation
+            ? schedule.missedNightDates(after: Date(), sessions: MonitoringSessionStore.load(), isMonitoring: isMonitoring)
+            : [])
+    }
+
+    /// ショートカットの「監視が必要か調べる」(`CheckMonitoringNeededIntent`)。アプリの画面は開かずに裏で呼ばれる。
+    /// 夜の時間帯に入っていて、まだ監視していなければ true
+    func checkMonitoringNeeded() -> Bool {
+        let firstTime = UserDefaults.standard.object(forKey: AlarmSettings.Key.automationCheckedAt) == nil
+        UserDefaults.standard.set(Date(), forKey: AlarmSettings.Key.automationCheckedAt)
+        schedule = AlarmSettings.load().schedule
+        let isMonitoring = state != .idle && !isDemo
+        let needed = schedule.needsMonitoring(at: Date(), isMonitoring: isMonitoring)
+        DiagnosticLog.write("automation check: needed=\(needed) monitoring=\(isMonitoring)")
+        if firstTime {
+            // 初めて動いたときに、翌朝の知らせの予約を始める
+            updateReminders()
+        }
+        return needed
     }
 
     // MARK: - いびき検知デモ
