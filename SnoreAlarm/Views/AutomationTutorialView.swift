@@ -3,7 +3,7 @@ import SwiftUI
 /// ショートカットアプリに「夜の時間帯に、まだ監視していなければ、いびきアラームの監視を始める」仕組みを作る手順を、
 /// 1画面ずつ絵を見せながら案内する (パケざんの案内と同じ作り。iOS 27 の画面に合わせている)。
 /// 絵は実際の画面を写したものではなく、押す所が分かるように描いた見本。
-/// 前半でショートカット「いびきの見張り」(監視が必要か調べる → もし はい なら 監視を開始) を作り、
+/// 前半でショートカット「いびきをみはる」(監視が必要か調べる → if文 はい なら 監視を開始) を作り、
 /// 後半でそれを動かすオートメーション (アプリを開いたとき・充電器につないだとき・時刻) を作る。
 /// iPhone がロック中だとアプリを開けないため、ロックが解除されている場面をきっかけの中心にしている
 struct AutomationTutorialView: View {
@@ -15,7 +15,8 @@ struct AutomationTutorialView: View {
     /// 手順の数 (0 ページ目は前置き、最後のページは完了)
     static let stepCount = 10
     /// 作るショートカットの名前
-    static let shortcutName = "いびきの見張り"
+    /// 漢字に変換しなくても打てるよう、ひらがなだけにする。「の」を入れると「のみ」と読み違えやすいので「を」でつなぐ
+    static let shortcutName = "いびきをみはる"
 
     /// 監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
     private let window = AlarmSettings.load().schedule.nightWindow
@@ -134,7 +135,7 @@ struct AutomationTutorialView: View {
     private var nameShortcut: some View {
         StepPage(title: "名前を「\(Self.shortcutName)」にする",
                  message: "いちばん上の「新規ショートカット」を押し、「名前を変更」を選んで「\(Self.shortcutName)」と入れます（①）。名前を入れたら、右上の「編集」を押してください（②）。",
-                 tip: "名前はあとでオートメーションから探すときに使います。「みはり」と入れても探せます。") {
+                 tip: "名前はあとでオートメーションの中で選ぶときに使います。ひらがなのまま入れてください。") {
             MockScreen {
                 HStack {
                     MockCircleButton(systemImage: "chevron.left")
