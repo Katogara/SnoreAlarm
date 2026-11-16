@@ -12,6 +12,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # iOS 26 の App Intents (必要なときだけアプリを前面に出す supportedModes) を使うため、入っている Xcode 26 のうち新しいものを選ぶ。
+      # 見つからなければ既定の Xcode のまま (そのときは「必要なら監視を開始」が入らない)
+      - name: Select Xcode 26
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          XC=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$XC" ]; then sudo xcode-select -s "$XC"; fi
+
       - name: Show Xcode version
         run: xcodebuild -version
 
