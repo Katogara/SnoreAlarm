@@ -526,6 +526,18 @@ final class MonitoringScheduleTests: XCTestCase {
         XCTAssertEqual(AlarmSettings.load(from: defaults).schedule,
                        MonitoringSchedule(isOn: true, startMinutes: 22 * 60 + 30, endMinutes: 6 * 60))
     }
+
+    /// 「アプリを自動で開く」は選んだ値を使い、まだ選んでいなければ、前からオートメーションを使っていた人だけ選んだものとみなす
+    func testAutoOpenEnabled() {
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        XCTAssertFalse(AlarmSettings.autoOpenEnabled(in: defaults))
+        defaults.set(Date(), forKey: AlarmSettings.Key.automationCheckedAt)
+        XCTAssertTrue(AlarmSettings.autoOpenEnabled(in: defaults))
+        defaults.set(false, forKey: AlarmSettings.Key.autoOpenEnabled)
+        XCTAssertFalse(AlarmSettings.autoOpenEnabled(in: defaults))
+        defaults.set(true, forKey: AlarmSettings.Key.autoOpenEnabled)
+        XCTAssertTrue(AlarmSettings.autoOpenEnabled(in: defaults))
+    }
 }
 
 final class WatchAlertTests: XCTestCase {
