@@ -145,13 +145,7 @@ private struct AlertDeviceSection: View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
                 Text("知らせる端末")
-                Picker("知らせる端末", selection: $alertDevice) {
-                    Text("iPhone").tag(AlertDevice.iPhone)
-                    Text("Apple Watch").tag(AlertDevice.watch)
-                    Text("両方").tag(AlertDevice.both)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                AlertDevicePicker(selection: $alertDevice)
             }
             if alertDevice.usesWatch && !monitor.isActive {
                 Button {
@@ -180,6 +174,60 @@ private struct AlertDeviceSection: View {
                 }
             } else {
                 PhraseText("iPhone 本体の振動で知らせます (安定して動きます)。")
+            }
+        }
+    }
+}
+
+/// 知らせる端末を 3 つのアイコンで選ぶ。選んでいるものを大きく、ほかを小さく薄く出す
+private struct AlertDevicePicker: View {
+    @Binding var selection: AlertDevice
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(AlertDevice.allCases) { device in
+                let isSelected = device == selection
+                // List の行の中に複数のボタンを置くため、.plain にして行全体が押されないようにする
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                        selection = device
+                    }
+                } label: {
+                    AlertDeviceIcon(device: device)
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .scaleEffect(isSelected ? 1 : 0.6)
+                        .opacity(isSelected ? 1 : 0.35)
+                        .frame(maxWidth: .infinity, minHeight: 64)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(device.label)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .padding(.vertical, 4)
+        .sensoryFeedback(.selection, trigger: selection)
+    }
+}
+
+/// 知らせる端末のアイコン。両方は iPhone と Watch を並べる
+private struct AlertDeviceIcon: View {
+    let device: AlertDevice
+
+    var body: some View {
+        switch device {
+        case .iPhone:
+            Image(systemName: "iphone")
+                .font(.system(size: 46))
+        case .watch:
+            Image(systemName: "applewatch")
+                .font(.system(size: 46))
+        case .both:
+            HStack(alignment: .bottom, spacing: 2) {
+                Image(systemName: "iphone")
+                    .font(.system(size: 42))
+                Image(systemName: "applewatch")
+                    .font(.system(size: 30))
             }
         }
     }

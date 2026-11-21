@@ -15,13 +15,68 @@ struct SettingsView: View {
     @AppStorage(AlarmSettings.Key.scheduleEndMinutes) private var scheduleEndMinutes = AlarmSettings.Default.scheduleEndMinutes
     @AppStorage(AlarmSettings.Key.dayBoundaryMinutes) private var dayBoundaryMinutes = AlarmSettings.Default.dayBoundaryMinutes
     @AppStorage(AlarmSettings.Key.watchFallback) private var watchFallback = AlarmSettings.Default.watchFallback
+    @AppStorage(AlarmSettings.Key.autoOpenEnabled) private var autoOpenEnabled = false
     @State private var showingAutomation = false
 
-    /// ショートカットで監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
-    private var nightWindowText: String {
-        let window = MonitoringSchedule(isOn: scheduleEnabled, startMinutes: scheduleStartMinutes,
-                                        endMinutes: scheduleEndMinutes).nightWindow
-        return "\(MonitoringSchedule.timeText(window.startMinutes))〜\(MonitoringSchedule.timeText(window.endMinutes))"
+    /// 始め忘れの防止のやり方
+    enum StartGuard: String, Identifiable {
+        /// 使わない
+        case off
+        /// 決めた時刻に通知で知らせる (簡単。勝手に画面は変わらない)
+        case notify
+        /// 通知に加えて、夜にほかのアプリを開いたとき、いびきアラームを前面に出して監視を始める (強め。ショートカットの登録が要る)
+        case autoOpen
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .off: "使わない"
+            case .notify: "通知で知らせる"
+            case .autoOpen: "アプリを自動で開く"
+            }
+        }
+
+        /// 「アプリを自動で開く」は「必要なら監視を開始」(iOS 26 から) を使うため、それより前の iOS では出さない
+        static var available: [StartGuard] {
+            if #available(iOS 26.0, *) {
+                return [.off, .notify, .autoOpen]
+            }
+            return [.off, .notify]
+        }
+    }
+
+    private var startGuard: StartGuard {
+        if autoOpenEnabled && StartGuard.available.contains(.autoOpen) { return .autoOpen }
+        return scheduleEnabled ? .notify : .off
+    }
+
+    /// やり方を選ぶと、お知らせ・自動終了 (`scheduleEnabled`) と自動で開く (`autoOpenEnabled`) をまとめて切り替える
+    private var startGuardBinding: Binding<StartGuard> {
+        Binding {
+            startGuard
+        } set: { mode in
+            scheduleEnabled = mode != .off
+            autoOpenEnabled = mode == .autoOpen
+        }
+    }
+
+    /// 監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
+    private var nightWindow: MonitoringSchedule {
+        MonitoringSchedule(isOn: scheduleEnabled, startMinutes: scheduleStartMinutes,
+                           endMinutes: scheduleEndMinutes).nightWindow
+    }
+
+    @ViewBuilder
+    private var startGuardFooter: some View {
+        switch startGuard {
+        case .off:
+            PhraseText("監視の始め忘れを防ぐ仕組みを使いません。")
+        case .notify:
+            PhraseText("毎日お知らせの時刻に「監視を始めましょう」と通知し、監視を始めるまで15分おきに4回まで繰り返します。通知の「監視を開始」を押すか、通知をタップすると監視を始めます。先に監視を始めていれば、その夜は通知しません。アプリを終了していても通知は届きます。監視は自動終了の時刻に止まります。")
+        case .autoOpen:
+            PhraseText("通知で知らせるのに加えて、夜の時間帯（\(MonitoringSchedule.timeText(nightWindow.startMinutes))〜\(MonitoringSchedule.timeText(nightWindow.endMinutes))）に YouTube などのアプリを開いたとき、まだ監視していなければ、いびきアラームの画面に切り替えて監視を始めます。元のアプリに戻るには、画面の下のふちを右へなぞります。使うには、iPhone の「ショートカット」アプリへの登録が必要です。監視しなかった夜は翌朝 \(MonitoringSchedule.timeText(nightWindow.endMinutes)) にお知らせします。")
+        }
     }
 
     var body: some View {
@@ -80,28 +135,29 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Toggle("寝る時刻のお知らせと自動終了", isOn: $scheduleEnabled)
+                    Picker("やり方", selection: startGuardBinding) {
+                        ForEach(StartGuard.available) { mode in
+                            Text(mode.label).tag(mode)
+                        }
+                    }
                     if scheduleEnabled {
                         DatePicker("お知らせ", selection: timeBinding($scheduleStartMinutes), displayedComponents: .hourAndMinute)
                         DatePicker("自動終了", selection: timeBinding($scheduleEndMinutes), displayedComponents: .hourAndMinute)
                     }
+                    if startGuard == .autoOpen {
+                        Button("自動で開くための登録の手順") {
+                            showingAutomation = true
+                        }
+                    }
                 } header: {
-                    Text("開始忘れの防止")
+                    Text("始め忘れの防止")
                 } footer: {
                     if scheduleEnabled && scheduleStartMinutes == scheduleEndMinutes {
                         PhraseText("お知らせと自動終了に別の時刻を指定してください。")
                             .foregroundStyle(.red)
                     } else {
-                        PhraseText("毎日お知らせの時刻に「監視を始めましょう」と通知し、監視を始めるまで15分おきに4回まで繰り返します。通知の「監視を開始」を押すか、通知をタップすると監視を始めます。先に監視を始めていれば、その夜は通知しません。アプリを終了していても通知は届きます。監視は自動終了の時刻に止まります。")
+                        startGuardFooter
                     }
-                }
-
-                Section {
-                    Button("自動で監視を始める") {
-                        showingAutomation = true
-                    }
-                } footer: {
-                    PhraseText("iPhone の「ショートカット」アプリに登録しておくと、夜の時間帯（\(nightWindowText)）に YouTube などのアプリを開いたとき、まだ監視していなければ、いびきアラームが開いて監視を始めます。押すと登録の手順を案内します。監視しなかった夜は、翌朝にお知らせします。")
                 }
 
                 Section {
@@ -143,6 +199,12 @@ struct SettingsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完了") { dismiss() }
+                }
+            }
+            .onAppear {
+                // この設定ができる前にオートメーションを作っていた人は「アプリを自動で開く」から始める
+                if UserDefaults.standard.object(forKey: AlarmSettings.Key.autoOpenEnabled) == nil {
+                    autoOpenEnabled = AlarmSettings.autoOpenEnabled()
                 }
             }
             .onDisappear {
