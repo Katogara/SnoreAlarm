@@ -12,6 +12,15 @@ enum AlertDevice: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// 読み上げ (VoiceOver) で使う名前
+    var label: String {
+        switch self {
+        case .iPhone: "iPhone"
+        case .watch: "Apple Watch"
+        case .both: "iPhone と Apple Watch の両方"
+        }
+    }
+
     /// Apple Watch に通知を送る設定か
     var usesWatch: Bool { self != .iPhone }
 }

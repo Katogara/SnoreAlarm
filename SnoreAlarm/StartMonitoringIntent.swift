@@ -34,7 +34,8 @@ struct CheckMonitoringNeededIntent: AppIntent {
 /// ショートカットの「必要なら監視を開始」(iOS 26 から)。裏で動いて監視が必要かを調べ、必要なときだけアプリを前面に出して監視を始める。
 /// 「監視が必要か調べる」と「if文」と「監視を開始」を組み合わせたショートカットを、利用者に作ってもらわずに済ませるためのもの。
 /// 前面に出るとき、iOS が利用者に確認を求めることがある (`alwaysConfirm: false` は「確認しないことがある」という指定)。
-/// 実機で確認が出るかを見るため、診断ログに前後を書く
+/// 実機 (iOS 27) では確認なしで前面に出て、監視が始まった (2026-11-21)。診断ログに前後を書く。
+/// 始め忘れの防止で「アプリを自動で開く」を選んでいなければ、何もしない (`checkMonitoringNeeded`)
 @available(iOS 26.0, *)
 struct StartMonitoringIfNeededIntent: AppIntent {
     static var title: LocalizedStringResource = "必要なら監視を開始"

@@ -45,6 +45,18 @@ struct AlarmSettings {
         /// ショートカットの「監視が必要か調べる」が最後に動いた日時。あれば、オートメーションを設定したとみなして
         /// 「昨夜は監視していませんでした」の知らせを出す
         static let automationCheckedAt = "automationCheckedAt"
+        /// 始め忘れの防止で「アプリを自動で開く」を選んだ。オフのときは、ショートカットの「必要なら監視を開始」などが
+        /// 呼ばれても監視を始めない (オートメーションを消し忘れても、勝手に開かないように)
+        static let autoOpenEnabled = "autoOpenEnabled"
+    }
+
+    /// 「アプリを自動で開く」を選んでいるか。まだ選んだことがなければ、この設定ができる前にオートメーションを作っていた人
+    /// (「監視が必要か調べる」が一度でも動いた人) を、選んでいるものとみなす
+    static func autoOpenEnabled(in defaults: UserDefaults = .standard) -> Bool {
+        if defaults.object(forKey: Key.autoOpenEnabled) != nil {
+            return defaults.bool(forKey: Key.autoOpenEnabled)
+        }
+        return defaults.object(forKey: Key.automationCheckedAt) != nil
     }
 
     enum Default {
