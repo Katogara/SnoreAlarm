@@ -538,6 +538,52 @@ final class MonitoringScheduleTests: XCTestCase {
         defaults.set(true, forKey: AlarmSettings.Key.autoOpenEnabled)
         XCTAssertTrue(AlarmSettings.autoOpenEnabled(in: defaults))
     }
+
+    /// アラームは毎晩開始時刻に 1 回。監視中の夜は鳴らさない
+    func testAlarmDatesOncePerNight() {
+        let schedule = MonitoringSchedule(isOn: true, startMinutes: 23 * 60, endMinutes: 7 * 60)
+        let dates = schedule.alarmDates(after: date(21, 12, 0), monitoringUntil: nil, calendar: calendar)
+        XCTAssertEqual(dates.count, 7)
+        XCTAssertEqual(Array(dates.prefix(2)), [date(21, 23, 0), date(22, 23, 0)])
+        let monitoring = schedule.alarmDates(after: date(21, 22, 0), monitoringUntil: date(22, 7, 0), calendar: calendar)
+        XCTAssertEqual(monitoring.first, date(22, 23, 0))
+        XCTAssertEqual(monitoring.count, 6)
+    }
+
+    /// 休む曜日・休む日の夜は、アラームもお知らせも出さず、自動で開く判定も false
+    func testSkippedNights() {
+        var schedule = MonitoringSchedule(isOn: true, startMinutes: 23 * 60, endMinutes: 7 * 60)
+        // 2026-10-21 は水曜 (weekday 4)
+        schedule.skipWeekdays = [4]
+        schedule.skipDays = ["2026-10-23"]
+        let alarms = schedule.alarmDates(after: date(21, 12, 0), monitoringUntil: nil, calendar: calendar)
+        XCTAssertEqual(Array(alarms.prefix(2)), [date(22, 23, 0), date(24, 23, 0)])
+        XCTAssertEqual(alarms.count, 5)
+        let reminders = schedule.reminderDates(after: date(21, 12, 0), monitoringUntil: nil, calendar: calendar)
+        XCTAssertEqual(reminders.first, date(22, 23, 0))
+        XCTAssertEqual(reminders.count, 20)
+        // 休む夜は日付をまたいでも監視が必要とみなさない
+        XCTAssertFalse(schedule.needsMonitoring(at: date(21, 23, 30), isMonitoring: false, calendar: calendar))
+        XCTAssertFalse(schedule.needsMonitoring(at: date(22, 2, 0), isMonitoring: false, calendar: calendar))
+        XCTAssertTrue(schedule.needsMonitoring(at: date(22, 23, 30), isMonitoring: false, calendar: calendar))
+        XCTAssertTrue(schedule.needsMonitoring(at: date(23, 2, 0), isMonitoring: false, calendar: calendar))
+    }
+
+    func testTonightStartAndDayKey() {
+        let schedule = MonitoringSchedule(isOn: true, startMinutes: 23 * 60, endMinutes: 7 * 60)
+        XCTAssertEqual(schedule.tonightStart(at: date(21, 20, 0), calendar: calendar), date(21, 23, 0))
+        XCTAssertEqual(schedule.tonightStart(at: date(22, 2, 0), calendar: calendar), date(21, 23, 0))
+        XCTAssertEqual(schedule.tonightStart(at: date(21, 23, 0), calendar: calendar), date(21, 23, 0))
+        XCTAssertEqual(MonitoringSchedule.dayKey(date(5, 23, 0), calendar: calendar), "2026-10-05")
+    }
+
+    func testSkipSettingsParsing() {
+        XCTAssertEqual(AlarmSettings.parseWeekdays("1,7,9,x"), [1, 7])
+        XCTAssertEqual(AlarmSettings.joined(Set([7, 1])), "1,7")
+        XCTAssertEqual(AlarmSettings.parseDays(""), [])
+        let pruned = AlarmSettings.prunedDays(["2026-10-19", "2026-10-20", "2026-10-21"], now: date(21, 12, 0), calendar: calendar)
+        XCTAssertEqual(pruned, ["2026-10-20", "2026-10-21"])
+    }
 }
 
 final class WatchAlertTests: XCTestCase {
