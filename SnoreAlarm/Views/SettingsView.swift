@@ -19,6 +19,7 @@ struct SettingsView: View {
     @AppStorage(AlarmSettings.Key.bedtimeAlarmEnabled) private var bedtimeAlarmEnabled = false
     @AppStorage(AlarmSettings.Key.skipWeekdays) private var skipWeekdays = ""
     @AppStorage(AlarmSettings.Key.skipDays) private var skipDays = ""
+    @AppStorage(AlarmSettings.Key.skipMode) private var skipMode = AlarmSettings.SkipMode.days.rawValue
     @State private var showingAutomation = false
     @State private var alarmAuthorization = BedtimeAlarm.Authorization.unsupported
 
@@ -74,6 +75,33 @@ struct SettingsView: View {
                 Task { alarmAuthorization = await BedtimeAlarm.requestAuthorization() }
             }
         }
+    }
+
+    /// 休み方を「曜日で選ぶ」に変えたら、日付で選んだ休む日は消す (見えないまま休み続けないように)
+    private var skipModeBinding: Binding<AlarmSettings.SkipMode> {
+        Binding {
+            AlarmSettings.SkipMode(rawValue: skipMode) ?? .days
+        } set: { mode in
+            if mode == .weekdays && skipMode != mode.rawValue {
+                skipDays = ""
+            }
+            skipMode = mode.rawValue
+        }
+    }
+
+    private var skipFooter: String {
+        var text = "夜勤の日など、知らせてほしくない夜を選びます。休む夜は、通知もアラームも出さず、アプリを自動で開くこともしません。"
+        if skipMode == AlarmSettings.SkipMode.weekdays.rawValue {
+            text += "選んだ曜日は毎週休みます。「曜日で選ぶ」に変えると、日付で選んだ休む日は消えます。"
+        } else {
+            text += "日付は、お知らせの時刻が来る日で選んでください。"
+        }
+        if startGuard == .alarm {
+            text += "メイン画面の上に並ぶ日付 (曜日) を押しても、休む日を選べます。"
+        } else {
+            text += "急に休みたいときは、メイン画面の「今夜は知らせない」を使ってください。"
+        }
+        return text
     }
 
     private var skipWeekdaysBinding: Binding<Set<Int>> {
@@ -193,19 +221,27 @@ struct SettingsView: View {
 
                 if startGuard != .off {
                     Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("休む曜日")
-                            WeekdayPicker(selection: skipWeekdaysBinding)
+                        Picker("休み方", selection: skipModeBinding) {
+                            ForEach(AlarmSettings.SkipMode.allCases) { mode in
+                                Text(mode.label).tag(mode)
+                            }
                         }
-                        NavigationLink {
-                            SkipDaysView(skipDays: $skipDays)
-                        } label: {
-                            LabeledContent("休む日", value: skipDaysSummary)
+                        if skipMode == AlarmSettings.SkipMode.weekdays.rawValue {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("休む曜日")
+                                WeekdayPicker(selection: skipWeekdaysBinding)
+                            }
+                        } else {
+                            NavigationLink {
+                                SkipDaysView(skipDays: $skipDays)
+                            } label: {
+                                LabeledContent("休む日", value: skipDaysSummary)
+                            }
                         }
                     } header: {
                         Text("始め忘れの防止を休む日")
                     } footer: {
-                        PhraseText("夜勤の日など、知らせてほしくない夜を選びます。休む夜は、通知もアラームも出さず、アプリを自動で開くこともしません。急に休みたいときは、メイン画面の「今夜は知らせない」を使ってください。曜日と日は、お知らせの時刻が来る日で選んでください。")
+                        PhraseText(skipFooter)
                     }
                 }
 

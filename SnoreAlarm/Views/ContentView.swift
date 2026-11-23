@@ -12,6 +12,8 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
+                AlarmStripSection()
+
                 Section {
                     StatusCard()
                         .listRowInsets(EdgeInsets())
@@ -194,11 +196,18 @@ private struct TonightSkipSection: View {
     @AppStorage(AlarmSettings.Key.bedtimeAlarmEnabled) private var bedtimeAlarmEnabled = false
     @AppStorage(AlarmSettings.Key.skipWeekdays) private var skipWeekdays = ""
     @AppStorage(AlarmSettings.Key.skipDays) private var skipDays = ""
+    @AppStorage(AlarmSettings.Key.skipMode) private var skipMode = AlarmSettings.SkipMode.days.rawValue
 
     private var schedule: MonitoringSchedule {
         var schedule = MonitoringSchedule(isOn: scheduleEnabled, startMinutes: scheduleStartMinutes, endMinutes: scheduleEndMinutes)
         schedule.skipWeekdays = AlarmSettings.parseWeekdays(skipWeekdays)
+        schedule.skipByWeekday = skipMode == AlarmSettings.SkipMode.weekdays.rawValue
         return schedule
+    }
+
+    /// 「アラームで知らせる」のときは、上の日付の帯で休む日を選ぶため出さない
+    private var usesAlarmStrip: Bool {
+        bedtimeAlarmEnabled && !autoOpenEnabled && BedtimeAlarm.isSupported
     }
 
     private var tonightKey: String? {
@@ -235,7 +244,7 @@ private struct TonightSkipSection: View {
     }
 
     var body: some View {
-        if schedule.isEnabled {
+        if schedule.isEnabled && !usesAlarmStrip {
             Section {
                 if isSkipWeekday {
                     LabeledContent("今夜は知らせない", value: "休む曜日")
