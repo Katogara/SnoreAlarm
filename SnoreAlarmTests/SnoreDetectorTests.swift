@@ -556,6 +556,9 @@ final class MonitoringScheduleTests: XCTestCase {
         // 2026-10-21 は水曜 (weekday 4)
         schedule.skipWeekdays = [4]
         schedule.skipDays = ["2026-10-23"]
+        // 休み方が「日付で選ぶ」なら曜日は使わない
+        XCTAssertEqual(schedule.alarmDates(after: date(21, 12, 0), monitoringUntil: nil, calendar: calendar).count, 6)
+        schedule.skipByWeekday = true
         let alarms = schedule.alarmDates(after: date(21, 12, 0), monitoringUntil: nil, calendar: calendar)
         XCTAssertEqual(Array(alarms.prefix(2)), [date(22, 23, 0), date(24, 23, 0)])
         XCTAssertEqual(alarms.count, 5)
