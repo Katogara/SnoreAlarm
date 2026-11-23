@@ -22,6 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>寝る時刻になっても監視を始めていないときに、目覚ましと同じアラームで知らせるために使います。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>睡眠中のいびきを検知するためにマイクを使用します。いびきと判定した数秒間だけを端末内に録音し (設定でオフにできます)、1週間で自動的に削除します。外部への送信はしません。</string>
 	<key>UIBackgroundModes</key>

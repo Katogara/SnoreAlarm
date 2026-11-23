@@ -48,6 +48,35 @@ struct AlarmSettings {
         /// 始め忘れの防止で「アプリを自動で開く」を選んだ。オフのときは、ショートカットの「必要なら監視を開始」などが
         /// 呼ばれても監視を始めない (オートメーションを消し忘れても、勝手に開かないように)
         static let autoOpenEnabled = "autoOpenEnabled"
+        /// 始め忘れの防止で「アラームで知らせる」を選んだ (iOS 26 から)。お知らせの時刻に、通知の代わりに目覚ましのアラームを鳴らす
+        static let bedtimeAlarmEnabled = "bedtimeAlarmEnabled"
+        /// 始め忘れの防止を休む曜日 (カンマ区切りの weekday。1 が日曜)
+        static let skipWeekdays = "skipWeekdays"
+        /// 始め忘れの防止を休む日 (カンマ区切りの "yyyy-MM-dd")。「今夜は知らせない」もここに入れる
+        static let skipDays = "skipDays"
+    }
+
+    static func parseWeekdays(_ text: String) -> Set<Int> {
+        Set(text.split(separator: ",").compactMap { Int($0) }.filter { (1...7).contains($0) })
+    }
+
+    static func parseDays(_ text: String) -> Set<String> {
+        Set(text.split(separator: ",").map(String.init))
+    }
+
+    static func joined(_ weekdays: Set<Int>) -> String {
+        weekdays.sorted().map(String.init).joined(separator: ",")
+    }
+
+    static func joined(_ days: Set<String>) -> String {
+        days.sorted().joined(separator: ",")
+    }
+
+    /// 休む日から、昨日より前の日を除く (今夜が日付をまたいでいても、昨日の分は残す)
+    static func prunedDays(_ days: Set<String>, now: Date = Date(), calendar: Calendar = .current) -> Set<String> {
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+        let limit = MonitoringSchedule.dayKey(yesterday, calendar: calendar)
+        return days.filter { $0 >= limit }
     }
 
     /// 「アプリを自動で開く」を選んでいるか。まだ選んだことがなければ、この設定ができる前にオートメーションを作っていた人
@@ -121,6 +150,8 @@ struct AlarmSettings {
         if defaults.object(forKey: Key.scheduleEndMinutes) != nil {
             settings.schedule.endMinutes = defaults.integer(forKey: Key.scheduleEndMinutes)
         }
+        settings.schedule.skipWeekdays = parseWeekdays(defaults.string(forKey: Key.skipWeekdays) ?? "")
+        settings.schedule.skipDays = parseDays(defaults.string(forKey: Key.skipDays) ?? "")
         return settings
     }
 

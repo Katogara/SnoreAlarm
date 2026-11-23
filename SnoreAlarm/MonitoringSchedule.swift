@@ -6,9 +6,34 @@ struct MonitoringSchedule: Equatable {
     var isOn = false
     var startMinutes = 23 * 60
     var endMinutes = 7 * 60
+    /// 始め忘れの防止を休む曜日 (`Calendar` の weekday。1 が日曜)。夜の時間帯が始まる日の曜日で見る
+    var skipWeekdays: Set<Int> = []
+    /// 始め忘れの防止を休む日 (`dayKey` の "yyyy-MM-dd")。夜の時間帯が始まる日で見る
+    var skipDays: Set<String> = []
 
     /// 開始と終了が同じ時刻のときは時間帯が決まらないため使わない
     var isEnabled: Bool { isOn && startMinutes != endMinutes }
+
+    /// `nightStart` に始まる夜は、始め忘れの防止 (お知らせ・アラーム・自動で開く・翌朝の知らせ) を休むか
+    func isSkipped(nightStart: Date, calendar: Calendar = .current) -> Bool {
+        skipWeekdays.contains(calendar.component(.weekday, from: nightStart))
+            || skipDays.contains(Self.dayKey(nightStart, calendar: calendar))
+    }
+
+    /// 今夜の夜の時間帯が始まる時刻。夜の時間帯の中ならその始まり、外なら次の始まり
+    func tonightStart(at now: Date, calendar: Calendar = .current) -> Date? {
+        let window = nightWindow
+        if window.contains(now, calendar: calendar) {
+            return Self.previous(window.startMinutes, before: now.addingTimeInterval(1), calendar: calendar)
+        }
+        return window.nextStart(after: now, calendar: calendar)
+    }
+
+    /// 日付を "yyyy-MM-dd" にする (休む日の保存に使う)
+    static func dayKey(_ date: Date, calendar: Calendar = .current) -> String {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+    }
 
     /// お知らせを繰り返す回数と間隔 (監視を始めるまで)
     static let reminderCount = 4
@@ -45,12 +70,30 @@ struct MonitoringSchedule: Equatable {
         for _ in 0..<days {
             guard let start = nextStart(after: after, calendar: calendar) else { break }
             after = start
+            if isSkipped(nightStart: start, calendar: calendar) { continue }
             for index in 0..<Self.reminderCount {
                 let date = start.addingTimeInterval(Self.reminderInterval * Double(index))
                 if date <= now { continue }
                 if let monitoringUntil, date < monitoringUntil { continue }
                 dates.append(date)
             }
+        }
+        return dates
+    }
+
+    /// 「アラームで知らせる」のアラームを鳴らす時刻 (`days` 日分)。毎日、開始時刻に 1 回。休む夜は鳴らさない。
+    /// - Parameter monitoringUntil: 監視中ならその終了時刻。それより前のアラームは鳴らさない (その夜はもう始めているため)
+    func alarmDates(after now: Date, monitoringUntil: Date?, days: Int = 7,
+                    calendar: Calendar = .current) -> [Date] {
+        guard isEnabled else { return [] }
+        var dates: [Date] = []
+        var after = now
+        for _ in 0..<days {
+            guard let start = nextStart(after: after, calendar: calendar) else { break }
+            after = start
+            if isSkipped(nightStart: start, calendar: calendar) { continue }
+            if let monitoringUntil, start < monitoringUntil { continue }
+            dates.append(start)
         }
         return dates
     }
@@ -67,9 +110,13 @@ struct MonitoringSchedule: Equatable {
                                               endMinutes: Self.defaultNightEndMinutes)
     }
 
-    /// 監視を始める必要があるか: 夜の時間帯に入っていて、まだ監視していない
+    /// 監視を始める必要があるか: 夜の時間帯に入っていて、まだ監視しておらず、休む夜でもない
     func needsMonitoring(at date: Date, isMonitoring: Bool, calendar: Calendar = .current) -> Bool {
-        !isMonitoring && nightWindow.contains(date, calendar: calendar)
+        guard !isMonitoring, nightWindow.contains(date, calendar: calendar) else { return false }
+        if let start = tonightStart(at: date, calendar: calendar), isSkipped(nightStart: start, calendar: calendar) {
+            return false
+        }
+        return true
     }
 
     /// 「昨夜は監視していませんでした」の知らせを出す時刻 (`days` 日分)。夜の時間帯の終了時刻に出す。
@@ -88,6 +135,7 @@ struct MonitoringSchedule: Equatable {
             guard let end = window.nextEnd(after: after, calendar: calendar) else { break }
             after = end
             guard let start = Self.previous(window.startMinutes, before: end, calendar: calendar) else { continue }
+            if isSkipped(nightStart: start, calendar: calendar) { continue }
             let monitored = sessions.indices.contains { index in
                 let session = sessions[index]
                 let sessionEnd = session.end

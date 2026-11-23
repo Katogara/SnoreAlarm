@@ -203,12 +203,15 @@ final class SnoreMonitor {
         case reminder
         /// ショートカットのオートメーション (`StartMonitoringIntent`)
         case automation
+        /// 寝る時刻のアラーム (`BedtimeAlarm`) の「監視を開始」
+        case alarm
 
         var message: String {
             switch self {
             case .manual: "監視を開始しました"
             case .reminder: "寝る時刻のお知らせから監視を開始しました"
             case .automation: "ショートカットのオートメーションから監視を開始しました"
+            case .alarm: "寝る時刻のアラームから監視を開始しました"
             }
         }
     }
@@ -430,12 +433,15 @@ final class SnoreMonitor {
         }
     }
 
-    /// 寝る時刻のお知らせと、「昨夜は監視していませんでした」の知らせを予約し直す。
-    /// 監視中はその夜の残りのお知らせを出さず、監視した夜の翌朝の知らせも出さない。
+    /// 寝る時刻のお知らせ (またはアラーム) と、「昨夜は監視していませんでした」の知らせを予約し直す。
+    /// 監視中はその夜の残りのお知らせを出さず、監視した夜の翌朝の知らせも出さない。休む夜はどれも出さない。
     private func updateReminders() {
         let isMonitoring = state != .idle && !isDemo
         let monitoringUntil = isMonitoring ? scheduledEnd : nil
-        notifier.scheduleReminders(at: schedule.reminderDates(after: Date(), monitoringUntil: monitoringUntil))
+        // 「アラームで知らせる」は、アラームの許可があれば通知の代わりにアラームを鳴らす (許可がなければ通知で知らせる)
+        let useAlarm = UserDefaults.standard.bool(forKey: AlarmSettings.Key.bedtimeAlarmEnabled) && BedtimeAlarm.isAuthorized
+        notifier.scheduleReminders(at: useAlarm ? [] : schedule.reminderDates(after: Date(), monitoringUntil: monitoringUntil))
+        BedtimeAlarm.reschedule(at: useAlarm ? schedule.alarmDates(after: Date(), monitoringUntil: monitoringUntil) : [])
         // 翌朝の知らせは、始め忘れの防止で「アプリを自動で開く」を選んだ人にだけ出す
         notifier.scheduleMissedNightNotices(at: AlarmSettings.autoOpenEnabled()
             ? schedule.missedNightDates(after: Date(), sessions: MonitoringSessionStore.load(), isMonitoring: isMonitoring)
