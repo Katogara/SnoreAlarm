@@ -79,7 +79,7 @@ struct AutomationTutorialView: View {
                 Label("かかる時間：5分ほど", systemImage: "clock")
                 Label("作るもの：オートメーション2つ", systemImage: "list.number")
             }
-            PhraseText("夜の時間帯は設定の「お知らせ」から「自動終了」までの時刻です。")
+            PhraseText("夜の時間帯は、メイン画面の右上の目覚ましのボタンから開く画面の「お知らせ」から「自動終了」までの時刻です。")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             PhraseText("このガイドとショートカットアプリを行き来しながら進めます。いびきアラームに戻ってくると、続きのページから見られます。")
@@ -217,7 +217,7 @@ struct AutomationTutorialView: View {
                 PhraseText("・いびきアラームの画面に切り替わったあと、元のアプリに戻るには、画面の下のふちを右へなぞってください。監視は続きます。")
                 PhraseText("・iPhone を手に持っているあいだは、いびきを数えません。iPhone を置いて\(Int(SnoreMonitor.resumeAfterStill / 60))分たつか、画面をロックして\(Int(SnoreMonitor.resumeAfterLock / 60))分たつと数え始めます。")
                 PhraseText("・夜の時間帯に一度も iPhone を触らなかった夜は、自動では始められません。その夜の翌朝 \(MonitoringSchedule.timeText(window.endMinutes)) に「昨夜は監視していませんでした」とお知らせします。")
-                PhraseText("・勝手に開くのをやめたいときは、設定の「始め忘れの防止」を「通知で知らせる」に変えてください。オートメーションが残っていても開かなくなります。")
+                PhraseText("・勝手に開くのをやめたいときは、メイン画面の右上の目覚ましのボタンから開く画面で、「ほかの知らせ方」を「通知で知らせる」に変えてください。オートメーションが残っていても開かなくなります。")
             }
             .padding()
             .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 16))

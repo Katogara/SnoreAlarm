@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(SnoreMonitor.self) private var monitor
     @State private var showingSettings = false
+    @State private var showingBedtimeAlarm = false
     @State private var showingRecordings = false
     @State private var showingNight = false
     @State private var showingWatchTest = false
@@ -71,7 +72,7 @@ struct ContentView: View {
                     }
                 } else {
                     Section {
-                        PhraseText("iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n設定の「始め忘れの防止」を使うと、毎日決まった時刻に監視の開始を通知やアラームでお知らせし、朝は自動で監視を止めます。")
+                        PhraseText("iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「寝る時刻のアラーム」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -93,7 +94,13 @@ struct ContentView: View {
                     }
                     .accessibilityLabel("一晩の記録")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        showingBedtimeAlarm = true
+                    } label: {
+                        Image(systemName: "alarm")
+                    }
+                    .accessibilityLabel(BedtimeAlarmView.title)
                     Button {
                         showingSettings = true
                     } label: {
@@ -109,6 +116,9 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showingBedtimeAlarm) {
+                BedtimeAlarmView()
             }
             .sheet(isPresented: $showingRecordings) {
                 RecordingsView()
@@ -151,7 +161,7 @@ private struct AlertDeviceSection: View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
                 Text("知らせる端末")
-                AlertDevicePicker(selection: $alertDevice)
+                AlertDeviceCarousel(selection: $alertDevice)
             }
             if alertDevice.usesWatch && !monitor.isActive {
                 Button {
@@ -257,60 +267,6 @@ private struct TonightSkipSection: View {
                 } else {
                     PhraseText("オンにすると、今夜 \(MonitoringSchedule.timeText(scheduleStartMinutes)) の\(what)を休みます。明日の夜からは元に戻ります。")
                 }
-            }
-        }
-    }
-}
-
-/// 知らせる端末を 3 つのアイコンで選ぶ。選んでいるものを大きく、ほかを小さく薄く出す
-private struct AlertDevicePicker: View {
-    @Binding var selection: AlertDevice
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(AlertDevice.allCases) { device in
-                let isSelected = device == selection
-                // List の行の中に複数のボタンを置くため、.plain にして行全体が押されないようにする
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
-                        selection = device
-                    }
-                } label: {
-                    AlertDeviceIcon(device: device)
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                        .scaleEffect(isSelected ? 1 : 0.6)
-                        .opacity(isSelected ? 1 : 0.35)
-                        .frame(maxWidth: .infinity, minHeight: 64)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(device.label)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-            }
-        }
-        .padding(.vertical, 4)
-        .sensoryFeedback(.selection, trigger: selection)
-    }
-}
-
-/// 知らせる端末のアイコン。両方は iPhone と Watch を並べる
-private struct AlertDeviceIcon: View {
-    let device: AlertDevice
-
-    var body: some View {
-        switch device {
-        case .iPhone:
-            Image(systemName: "iphone")
-                .font(.system(size: 46))
-        case .watch:
-            Image(systemName: "applewatch")
-                .font(.system(size: 46))
-        case .both:
-            HStack(alignment: .bottom, spacing: 2) {
-                Image(systemName: "iphone")
-                    .font(.system(size: 42))
-                Image(systemName: "applewatch")
-                    .font(.system(size: 30))
             }
         }
     }
