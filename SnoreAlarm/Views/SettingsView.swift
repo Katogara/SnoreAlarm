@@ -16,7 +16,11 @@ struct SettingsView: View {
     @AppStorage(AlarmSettings.Key.dayBoundaryMinutes) private var dayBoundaryMinutes = AlarmSettings.Default.dayBoundaryMinutes
     @AppStorage(AlarmSettings.Key.watchFallback) private var watchFallback = AlarmSettings.Default.watchFallback
     @AppStorage(AlarmSettings.Key.autoOpenEnabled) private var autoOpenEnabled = false
+    @AppStorage(AlarmSettings.Key.bedtimeAlarmEnabled) private var bedtimeAlarmEnabled = false
+    @AppStorage(AlarmSettings.Key.skipWeekdays) private var skipWeekdays = ""
+    @AppStorage(AlarmSettings.Key.skipDays) private var skipDays = ""
     @State private var showingAutomation = false
+    @State private var alarmAuthorization = BedtimeAlarm.Authorization.unsupported
 
     /// 始め忘れの防止のやり方
     enum StartGuard: String, Identifiable {
@@ -24,6 +28,8 @@ struct SettingsView: View {
         case off
         /// 決めた時刻に通知で知らせる (簡単。勝手に画面は変わらない)
         case notify
+        /// 決めた時刻に目覚ましのアラームで知らせる (止めるまで鳴る。iOS 26 から)
+        case alarm
         /// 通知に加えて、夜にほかのアプリを開いたとき、いびきアラームを前面に出して監視を始める (強め。ショートカットの登録が要る)
         case autoOpen
 
@@ -33,31 +39,48 @@ struct SettingsView: View {
             switch self {
             case .off: "使わない"
             case .notify: "通知で知らせる"
+            case .alarm: "アラームで知らせる"
             case .autoOpen: "アプリを自動で開く"
             }
         }
 
-        /// 「アプリを自動で開く」は「必要なら監視を開始」(iOS 26 から) を使うため、それより前の iOS では出さない
+        /// 「アラームで知らせる」(AlarmKit) と「アプリを自動で開く」(「必要なら監視を開始」) は iOS 26 からのため、
+        /// それより前の iOS では出さない
+        @MainActor
         static var available: [StartGuard] {
-            if #available(iOS 26.0, *) {
-                return [.off, .notify, .autoOpen]
-            }
-            return [.off, .notify]
+            var modes: [StartGuard] = [.off, .notify]
+            if BedtimeAlarm.isSupported { modes.append(.alarm) }
+            if #available(iOS 26.0, *) { modes.append(.autoOpen) }
+            return modes
         }
     }
 
     private var startGuard: StartGuard {
         if autoOpenEnabled && StartGuard.available.contains(.autoOpen) { return .autoOpen }
+        if bedtimeAlarmEnabled && StartGuard.available.contains(.alarm) { return .alarm }
         return scheduleEnabled ? .notify : .off
     }
 
-    /// やり方を選ぶと、お知らせ・自動終了 (`scheduleEnabled`) と自動で開く (`autoOpenEnabled`) をまとめて切り替える
+    /// やり方を選ぶと、お知らせ・自動終了 (`scheduleEnabled`)、アラーム (`bedtimeAlarmEnabled`)、
+    /// 自動で開く (`autoOpenEnabled`) をまとめて切り替える
     private var startGuardBinding: Binding<StartGuard> {
         Binding {
             startGuard
         } set: { mode in
             scheduleEnabled = mode != .off
             autoOpenEnabled = mode == .autoOpen
+            bedtimeAlarmEnabled = mode == .alarm
+            if mode == .alarm {
+                Task { alarmAuthorization = await BedtimeAlarm.requestAuthorization() }
+            }
+        }
+    }
+
+    private var skipWeekdaysBinding: Binding<Set<Int>> {
+        Binding {
+            AlarmSettings.parseWeekdays(skipWeekdays)
+        } set: {
+            skipWeekdays = AlarmSettings.joined($0)
         }
     }
 
@@ -74,6 +97,14 @@ struct SettingsView: View {
             PhraseText("監視の始め忘れを防ぐ仕組みを使いません。")
         case .notify:
             PhraseText("毎日お知らせの時刻に「監視を始めましょう」と通知し、監視を始めるまで15分おきに4回まで繰り返します。通知の「監視を開始」を押すか、通知をタップすると監視を始めます。先に監視を始めていれば、その夜は通知しません。アプリを終了していても通知は届きます。監視は自動終了の時刻に止まります。")
+        case .alarm:
+            VStack(alignment: .leading, spacing: 4) {
+                PhraseText("毎日お知らせの時刻に、時計アプリの目覚ましと同じアラームで、止めるまで音と振動で知らせます。マナーモードや睡眠モードのときも鳴ります。アラームの「監視を開始」を押すと、いびきアラームが開いて監視を始めます。「止める」を押すと、その夜はもう鳴りません。先に監視を始めていれば、その夜は鳴りません。監視は自動終了の時刻に止まります。")
+                if alarmAuthorization == .denied {
+                    PhraseText("アラームが許可されていないため、代わりに通知で知らせます。「設定」アプリでいびきアラームを開き、アラームを許可してください。")
+                        .foregroundStyle(.red)
+                }
+            }
         case .autoOpen:
             PhraseText("通知で知らせるのに加えて、夜の時間帯（\(MonitoringSchedule.timeText(nightWindow.startMinutes))〜\(MonitoringSchedule.timeText(nightWindow.endMinutes))）に YouTube などのアプリを開いたとき、まだ監視していなければ、いびきアラームの画面に切り替えて監視を始めます。元のアプリに戻るには、画面の下のふちを右へなぞります。使うには、iPhone の「ショートカット」アプリへの登録が必要です。監視しなかった夜は翌朝 \(MonitoringSchedule.timeText(nightWindow.endMinutes)) にお知らせします。")
         }
@@ -160,6 +191,24 @@ struct SettingsView: View {
                     }
                 }
 
+                if startGuard != .off {
+                    Section {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("休む曜日")
+                            WeekdayPicker(selection: skipWeekdaysBinding)
+                        }
+                        NavigationLink {
+                            SkipDaysView(skipDays: $skipDays)
+                        } label: {
+                            LabeledContent("休む日", value: skipDaysSummary)
+                        }
+                    } header: {
+                        Text("始め忘れの防止を休む日")
+                    } footer: {
+                        PhraseText("夜勤の日など、知らせてほしくない夜を選びます。休む夜は、通知もアラームも出さず、アプリを自動で開くこともしません。急に休みたいときは、メイン画面の「今夜は知らせない」を使ってください。曜日と日は、お知らせの時刻が来る日で選んでください。")
+                    }
+                }
+
                 Section {
                     Picker("開始までの待ち時間", selection: $startDelayMinutes) {
                         Text("なし").tag(0)
@@ -206,6 +255,9 @@ struct SettingsView: View {
                 if UserDefaults.standard.object(forKey: AlarmSettings.Key.autoOpenEnabled) == nil {
                     autoOpenEnabled = AlarmSettings.autoOpenEnabled()
                 }
+                alarmAuthorization = BedtimeAlarm.authorization
+                let pruned = AlarmSettings.joined(AlarmSettings.prunedDays(AlarmSettings.parseDays(skipDays)))
+                if pruned != skipDays { skipDays = pruned }
             }
             .onDisappear {
                 // 時刻を選んでいる途中で何度も予約し直さないよう、画面を閉じたときにまとめて反映する
@@ -221,5 +273,84 @@ struct SettingsView: View {
     /// 0 時からの分を DatePicker の時刻として扱う
     private func timeBinding(_ minutes: Binding<Int>) -> Binding<Date> {
         minutesBinding(minutes)
+    }
+
+    /// 休む日の行に出す件数 (今日より前の日は数えない)
+    private var skipDaysSummary: String {
+        let today = MonitoringSchedule.dayKey(Date())
+        let count = AlarmSettings.parseDays(skipDays).filter { $0 >= today }.count
+        return count == 0 ? "なし" : "\(count)日"
+    }
+}
+
+/// 休む曜日を 7 つの丸で選ぶ。選んだ曜日を塗りつぶす
+private struct WeekdayPicker: View {
+    @Binding var selection: Set<Int>
+    private static let symbols = ["日", "月", "火", "水", "木", "金", "土"]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(1...7, id: \.self) { weekday in
+                let isSelected = selection.contains(weekday)
+                // Form の行の中に複数のボタンを置くため、.plain にして行全体が押されないようにする
+                Button {
+                    if isSelected {
+                        selection.remove(weekday)
+                    } else {
+                        selection.insert(weekday)
+                    }
+                } label: {
+                    Text(Self.symbols[weekday - 1])
+                        .font(.subheadline.weight(isSelected ? .bold : .regular))
+                        .foregroundStyle(isSelected ? Color.white : Color.primary)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.15)))
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(Self.symbols[weekday - 1])曜日")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .padding(.vertical, 2)
+        .sensoryFeedback(.selection, trigger: selection)
+    }
+}
+
+/// 休む日をカレンダーで選ぶ
+private struct SkipDaysView: View {
+    @Binding var skipDays: String
+    @Environment(\.calendar) private var calendar
+
+    /// 保存している "yyyy-MM-dd" と、カレンダーの選択 (年月日の DateComponents) を相互に変える
+    private var selection: Binding<Set<DateComponents>> {
+        Binding {
+            Set(AlarmSettings.parseDays(skipDays).compactMap { key -> DateComponents? in
+                let parts = key.split(separator: "-").compactMap { Int($0) }
+                guard parts.count == 3,
+                      let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+                else { return nil }
+                return calendar.dateComponents([.calendar, .era, .year, .month, .day], from: date)
+            })
+        } set: { components in
+            let keys = components.compactMap { component -> String? in
+                guard let year = component.year, let month = component.month, let day = component.day else { return nil }
+                return String(format: "%04d-%02d-%02d", year, month, day)
+            }
+            skipDays = AlarmSettings.joined(Set(keys))
+        }
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                MultiDatePicker("休む日", selection: selection)
+            } footer: {
+                PhraseText("休む夜の、お知らせの時刻が来る日を選んでください。もう一度押すと外せます。過ぎた日は自動で消えます。")
+            }
+        }
+        .navigationTitle("休む日")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -19,6 +19,10 @@ struct ContentView: View {
 
                 AlertDeviceSection(showingWatchTest: $showingWatchTest)
 
+                if !monitor.isActive {
+                    TonightSkipSection()
+                }
+
                 Section("入力レベル") {
                     LevelMeter(levelDB: monitor.levelDB, thresholdDB: monitor.thresholdDB)
                         .padding(.vertical, 4)
@@ -65,7 +69,7 @@ struct ContentView: View {
                     }
                 } else {
                     Section {
-                        PhraseText("iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n設定の「寝る時刻のお知らせと自動終了」をオンにすると、毎日決まった時刻に監視の開始を通知でお知らせし、朝は自動で監視を止めます。")
+                        PhraseText("iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n設定の「始め忘れの防止」を使うと、毎日決まった時刻に監視の開始を通知やアラームでお知らせし、朝は自動で監視を止めます。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -174,6 +178,76 @@ private struct AlertDeviceSection: View {
                 }
             } else {
                 PhraseText("iPhone 本体の振動で知らせます (安定して動きます)。")
+            }
+        }
+    }
+}
+
+/// 「今夜は知らせない」。始め忘れの防止を使っているときだけ出し、押した夜だけ通知・アラーム・自動で開くを休む
+/// (休む日 `skipDays` に今夜の日付を入れる。翌日からは元に戻る)
+private struct TonightSkipSection: View {
+    @Environment(SnoreMonitor.self) private var monitor
+    @AppStorage(AlarmSettings.Key.scheduleEnabled) private var scheduleEnabled = AlarmSettings.Default.scheduleEnabled
+    @AppStorage(AlarmSettings.Key.scheduleStartMinutes) private var scheduleStartMinutes = AlarmSettings.Default.scheduleStartMinutes
+    @AppStorage(AlarmSettings.Key.scheduleEndMinutes) private var scheduleEndMinutes = AlarmSettings.Default.scheduleEndMinutes
+    @AppStorage(AlarmSettings.Key.autoOpenEnabled) private var autoOpenEnabled = false
+    @AppStorage(AlarmSettings.Key.bedtimeAlarmEnabled) private var bedtimeAlarmEnabled = false
+    @AppStorage(AlarmSettings.Key.skipWeekdays) private var skipWeekdays = ""
+    @AppStorage(AlarmSettings.Key.skipDays) private var skipDays = ""
+
+    private var schedule: MonitoringSchedule {
+        var schedule = MonitoringSchedule(isOn: scheduleEnabled, startMinutes: scheduleStartMinutes, endMinutes: scheduleEndMinutes)
+        schedule.skipWeekdays = AlarmSettings.parseWeekdays(skipWeekdays)
+        return schedule
+    }
+
+    private var tonightKey: String? {
+        schedule.tonightStart(at: Date()).map { MonitoringSchedule.dayKey($0) }
+    }
+
+    /// 今夜が休む曜日にあたる
+    private var isSkipWeekday: Bool {
+        guard let start = schedule.tonightStart(at: Date()) else { return false }
+        return schedule.isSkipped(nightStart: start)
+    }
+
+    private var skipTonight: Binding<Bool> {
+        Binding {
+            guard let key = tonightKey else { return false }
+            return AlarmSettings.parseDays(skipDays).contains(key)
+        } set: { skip in
+            guard let key = tonightKey else { return }
+            var days = AlarmSettings.prunedDays(AlarmSettings.parseDays(skipDays))
+            if skip {
+                days.insert(key)
+            } else {
+                days.remove(key)
+            }
+            skipDays = AlarmSettings.joined(days)
+            monitor.applySchedule()
+        }
+    }
+
+    private var what: String {
+        if autoOpenEnabled { return "通知とアプリを自動で開く仕組み" }
+        if bedtimeAlarmEnabled && BedtimeAlarm.isSupported { return "アラーム" }
+        return "通知"
+    }
+
+    var body: some View {
+        if schedule.isEnabled {
+            Section {
+                if isSkipWeekday {
+                    LabeledContent("今夜は知らせない", value: "休む曜日")
+                } else {
+                    Toggle("今夜は知らせない", isOn: skipTonight)
+                }
+            } footer: {
+                if isSkipWeekday {
+                    PhraseText("今夜は設定で休む曜日にしているため、\(what)を休みます。")
+                } else {
+                    PhraseText("オンにすると、今夜 \(MonitoringSchedule.timeText(scheduleStartMinutes)) の\(what)を休みます。明日の夜からは元に戻ります。")
+                }
             }
         }
     }
