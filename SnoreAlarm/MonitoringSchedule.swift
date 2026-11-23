@@ -10,13 +10,15 @@ struct MonitoringSchedule: Equatable {
     var skipWeekdays: Set<Int> = []
     /// 始め忘れの防止を休む日 (`dayKey` の "yyyy-MM-dd")。夜の時間帯が始まる日で見る
     var skipDays: Set<String> = []
+    /// 休み方が「曜日で選ぶ」。そのときだけ `skipWeekdays` を使う (休む日 `skipDays` はどちらでも使う)
+    var skipByWeekday = false
 
     /// 開始と終了が同じ時刻のときは時間帯が決まらないため使わない
     var isEnabled: Bool { isOn && startMinutes != endMinutes }
 
     /// `nightStart` に始まる夜は、始め忘れの防止 (お知らせ・アラーム・自動で開く・翌朝の知らせ) を休むか
     func isSkipped(nightStart: Date, calendar: Calendar = .current) -> Bool {
-        skipWeekdays.contains(calendar.component(.weekday, from: nightStart))
+        (skipByWeekday && skipWeekdays.contains(calendar.component(.weekday, from: nightStart)))
             || skipDays.contains(Self.dayKey(nightStart, calendar: calendar))
     }
 

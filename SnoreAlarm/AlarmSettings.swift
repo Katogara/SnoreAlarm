@@ -54,6 +54,25 @@ struct AlarmSettings {
         static let skipWeekdays = "skipWeekdays"
         /// 始め忘れの防止を休む日 (カンマ区切りの "yyyy-MM-dd")。「今夜は知らせない」もここに入れる
         static let skipDays = "skipDays"
+        /// 休み方 (`SkipMode`)。日付で選ぶか、曜日で選ぶか
+        static let skipMode = "skipMode"
+    }
+
+    /// 始め忘れの防止の休み方
+    enum SkipMode: String, CaseIterable, Identifiable {
+        /// 日付で選ぶ (`skipDays`)
+        case days
+        /// 曜日で選ぶ (`skipWeekdays`)。毎週くり返す
+        case weekdays
+
+        var id: String { rawValue }
+
+        var label: String {
+            switch self {
+            case .days: "日付で選ぶ"
+            case .weekdays: "曜日で選ぶ"
+            }
+        }
     }
 
     static func parseWeekdays(_ text: String) -> Set<Int> {
@@ -152,6 +171,7 @@ struct AlarmSettings {
         }
         settings.schedule.skipWeekdays = parseWeekdays(defaults.string(forKey: Key.skipWeekdays) ?? "")
         settings.schedule.skipDays = parseDays(defaults.string(forKey: Key.skipDays) ?? "")
+        settings.schedule.skipByWeekday = defaults.string(forKey: Key.skipMode) == SkipMode.weekdays.rawValue
         return settings
     }
 
