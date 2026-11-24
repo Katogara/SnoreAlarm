@@ -31,7 +31,8 @@ targets:
         INFOPLIST_FILE: SnoreAlarm/Info.plist
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
-        # 開発中の診断ログ (DiagnosticLog.swift)。リリース時はこの行を消す
+        # 開発中の診断ログ (DiagnosticLog.swift)。リリース時はこの行を消す。
+        # App Store に出すときは SUBSCRIPTION_REQUIRED を足す (未登録なら監視を止める。SubscriptionStore.swift)
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DIAGNOSTICS"
   SnoreAlarmTests:
     type: bundle.unit-test
