@@ -3,11 +3,15 @@
 name: SnoreAlarm
 options:
   bundleIdPrefix: com.example
+  # 未対応の言語の人には英語を出す。日本語の文はコードの中の文がそのまま訳のキーになる (en.lproj/Localizable.strings)
+  developmentLanguage: en
   deploymentTarget:
     iOS: "17.0"
 settings:
   base:
     SWIFT_VERSION: "5.0"
+    # 訳す文の一覧 (.stringsdata) をビルドで書き出す。CI で集めて訳の抜けを調べる
+    SWIFT_EMIT_LOC_STRINGS: YES
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
 packages:
