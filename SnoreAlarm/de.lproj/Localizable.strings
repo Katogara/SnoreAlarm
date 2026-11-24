@@ -153,7 +153,6 @@
 "アプリ" = "App";
 "アプリを自動で開く" = "App automatisch öffnen";
 "アプリを自動で開く設定" = "App automatisch öffnen";
-"アラーム" = "Wecker";
 "アラームから監視を開始" = "Überwachung über Wecker starten";
 "アラームが許可されていないため、代わりに通知で知らせます。「設定」アプリでいびきアラームを開き、アラームを許可してください。" = "Wecker sind nicht erlaubt, daher erhältst du stattdessen eine Mitteilung. Öffne Schnarchalarm in der Einstellungen-App und erlaube Wecker.";
 "アラームが鳴ります" = "Wecker an";
@@ -291,7 +290,6 @@
 "振動の長さ %lld 秒" = "Vibrationsdauer: %1$lld s";
 "振動をテスト" = "Vibration testen";
 "振動を止める" = "Vibration stoppen";
-"振動アラーム" = "Vibrationshinweise";
 "振動中" = "Vibriert";
 "日付で選ぶ" = "Nach Datum";
 "日付は、お知らせの時刻が来る日で選んでください。" = "Wähle die Daten nach dem Tag, auf den die Erinnerungszeit fällt.";
