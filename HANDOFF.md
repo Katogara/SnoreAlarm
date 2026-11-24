@@ -197,6 +197,7 @@
      - 訳の作り方: CI (`SWIFT_EMIT_LOC_STRINGS`) が訳す文の一覧を `loc-report` (keys.json・missing.json) として書き出す → `python scripts/build_strings.py keys.json en` で `scripts/translations/en.json` から `en.lproj` の `.strings` を作る。訳の表は、書式指定を `{1}` `{2}` にした日本語の文で引き、訳の中の `{n}` は番号付きの書式指定に戻す。文を変えたら en.json も直し、missing.json が空 (言語によらない iPhone・OK などだけ) になるのを確かめる。`.strings` は手で直さない
      - ほかの言語を足すときは、`scripts/translations/<言語>.json` を作り、`build_strings.py` の `INFO_PLIST` に訳を足し、Info.plist の `CFBundleLocalizations` に言語を足す
      - 英語のショートカットの手順 (`AutomationTutorialView`) の画面の名前 (Automation・Is Opened など) は、英語の iPhone では確かめていない
+     - 2026-11-24 ドイツ語 (de)・フランス語 (fr)・スペイン語 (es)・ポルトガル語 (pt-BR)・韓国語 (ko)・中国語簡体字 (zh-Hans)・繁体字 (zh-Hant) を追加。訳は Claude が書いたもので、母語の人の確認はまだ。ショートカットアプリの画面の名前 (ライブラリ・開いた など) はどの言語も実機で確かめていない。`Phrases.joinSentences` は日本語と中国語では空白を入れない
   - 案内 `AutomationTutorialView` (2026-11-21 から 5 手順): オートメーションを作る → 「必要なら監視を開始」を入れる → きっかけを「アプリ」に → 「開いた」にしてオートメーションがオンかを確かめる → 充電器でもう 1 つ作る。時刻のきっかけはロック中に失敗するのでやめた。iOS 27 では、オートメーションの編集画面の検索欄からアクションもきっかけ (青い「オートメーション」) も選ぶ。以前の 10 手順 (ショートカット「いびきをみはる」を作る形) は 2026-11-13 に手順 5 まで実機で確認していた
 - [x] 一晩の記録のグラフ (`NightRecordTests` で区切り・複数回の監視・終了を記録できなかった監視のまとめ方を確認。録音の最大音量はファイル名に入れ、以前の録音は表示時に読み込んで測る。画面は実機未確認)
 
