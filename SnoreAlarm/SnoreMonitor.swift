@@ -410,6 +410,55 @@ final class SnoreMonitor {
         await start(source: source)
     }
 
+    // MARK: - あとでもう一度鳴らす
+
+    /// 「あとでもう一度鳴らす」で選べる時間 (分)
+    static let snoozeChoices = [15, 30]
+
+    /// あとでもう一度鳴らす寝る時刻のアラームの時刻。監視を始めると消す
+    private(set) var snoozeAlarmAt: Date? = SnoreMonitor.savedSnooze()
+
+    nonisolated private static func savedSnooze() -> Date? {
+        let value = UserDefaults.standard.double(forKey: AlarmSettings.Key.snoozeAlarmAt)
+        return value > 0 ? Date(timeIntervalSince1970: value) : nil
+    }
+
+    private func setSnooze(_ date: Date?) {
+        snoozeAlarmAt = date
+        if let date {
+            UserDefaults.standard.set(date.timeIntervalSince1970, forKey: AlarmSettings.Key.snoozeAlarmAt)
+        } else {
+            UserDefaults.standard.removeObject(forKey: AlarmSettings.Key.snoozeAlarmAt)
+        }
+    }
+
+    /// お風呂などで、まだ監視を始めたくないとき。監視を始めずに (監視中なら終えて)、`minutes` 分後にもう一度
+    /// 寝る時刻のアラームで知らせる
+    func snoozeBedtimeAlarm(minutes: Int) {
+        let date = Date().addingTimeInterval(TimeInterval(minutes * 60))
+        if isDemo {
+            finishDemo("デモを終了しました")
+        }
+        let message = "\(date.formatted(date: .omitted, time: .shortened)) にもう一度アラームで知らせます"
+        if state != .idle {
+            // 監視を終えてから予約する (監視中のままだと、予約したアラームを消してしまうため)
+            append(.info, "監視を終了しました")
+            MonitoringSessionStore.end()
+            teardown()
+        }
+        setSnooze(date)
+        append(.info, message)
+        updateReminders()
+    }
+
+    /// あとでもう一度鳴らすアラームを取り消す
+    func cancelSnooze() {
+        guard snoozeAlarmAt != nil else { return }
+        setSnooze(nil)
+        append(.info, "もう一度鳴らすアラームを取り消しました")
+        updateReminders()
+    }
+
     /// 監視中に終了時刻まで待つ。時計の変更にも追従できるよう、1 分ごとに起きて時刻を確かめる。
     private func runScheduleTimer() {
         scheduleTask?.cancel()
@@ -441,7 +490,16 @@ final class SnoreMonitor {
         // 「アラームで知らせる」は、アラームの許可があれば通知の代わりにアラームを鳴らす (許可がなければ通知で知らせる)
         let useAlarm = UserDefaults.standard.bool(forKey: AlarmSettings.Key.bedtimeAlarmEnabled) && BedtimeAlarm.isAuthorized
         notifier.scheduleReminders(at: useAlarm ? [] : schedule.reminderDates(after: Date(), monitoringUntil: monitoringUntil))
-        BedtimeAlarm.reschedule(at: useAlarm ? schedule.alarmDates(after: Date(), monitoringUntil: monitoringUntil) : [])
+        // 監視を始めたら、あとでもう一度鳴らすアラームは要らない
+        if let snooze = snoozeAlarmAt, isMonitoring || snooze <= Date() {
+            setSnooze(nil)
+        }
+        var alarmDates = useAlarm ? schedule.alarmDates(after: Date(), monitoringUntil: monitoringUntil) : []
+        if useAlarm, let snooze = schedule.snoozeAlarmDate(snoozeAlarmAt, now: Date(), isMonitoring: isMonitoring) {
+            alarmDates.append(snooze)
+            alarmDates.sort()
+        }
+        BedtimeAlarm.reschedule(at: alarmDates)
         // 翌朝の知らせは、始め忘れの防止で「アプリを自動で開く」を選んだ人にだけ出す
         notifier.scheduleMissedNightNotices(at: AlarmSettings.autoOpenEnabled()
             ? schedule.missedNightDates(after: Date(), sessions: MonitoringSessionStore.load(), isMonitoring: isMonitoring)

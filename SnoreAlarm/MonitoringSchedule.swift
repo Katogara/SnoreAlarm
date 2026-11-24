@@ -100,6 +100,16 @@ struct MonitoringSchedule: Equatable {
         return dates
     }
 
+    /// 「あとでもう一度鳴らす」のアラーム (`snooze`) を鳴らすなら、その時刻。
+    /// まだ来ていない時刻で、監視中でなく、今夜が休む夜でもないときだけ鳴らす
+    func snoozeAlarmDate(_ snooze: Date?, now: Date, isMonitoring: Bool, calendar: Calendar = .current) -> Date? {
+        guard isEnabled, let snooze, snooze > now, !isMonitoring else { return nil }
+        if let start = tonightStart(at: now, calendar: calendar), isSkipped(nightStart: start, calendar: calendar) {
+            return nil
+        }
+        return snooze
+    }
+
     // MARK: - ショートカットで監視を自動で始める夜の時間帯
 
     /// お知らせ・自動終了がオフのときの夜の時間帯 (22:00〜5:00)

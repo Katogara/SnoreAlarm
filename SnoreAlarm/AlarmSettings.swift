@@ -56,6 +56,8 @@ struct AlarmSettings {
         static let skipDays = "skipDays"
         /// 休み方 (`SkipMode`)。日付で選ぶか、曜日で選ぶか
         static let skipMode = "skipMode"
+        /// 「あとでもう一度鳴らす」アラームの時刻 (1970 年からの秒)。監視を始めると消す
+        static let snoozeAlarmAt = "snoozeAlarmAt"
     }
 
     /// 始め忘れの防止の休み方
