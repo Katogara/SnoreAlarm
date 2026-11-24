@@ -153,7 +153,6 @@
 "アプリ" = "App";
 "アプリを自動で開く" = "Ouvrir l’app automatiquement";
 "アプリを自動で開く設定" = "Ouvrir l’app automatiquement";
-"アラーム" = "Alarme";
 "アラームから監視を開始" = "Démarrer la surveillance depuis l’alarme";
 "アラームが許可されていないため、代わりに通知で知らせます。「設定」アプリでいびきアラームを開き、アラームを許可してください。" = "Les alarmes ne sont pas autorisées : vous recevrez une notification à la place. Ouvrez Alarme Ronflement dans l’app Réglages et autorisez les alarmes.";
 "アラームが鳴ります" = "Alarme activée";
@@ -291,7 +290,6 @@
 "振動の長さ %lld 秒" = "Durée de vibration : %1$lld s";
 "振動をテスト" = "Tester la vibration";
 "振動を止める" = "Arrêter la vibration";
-"振動アラーム" = "Alertes par vibration";
 "振動中" = "Vibration";
 "日付で選ぶ" = "Par date";
 "日付は、お知らせの時刻が来る日で選んでください。" = "Choisissez les dates selon le jour où tombe l’heure du rappel.";
