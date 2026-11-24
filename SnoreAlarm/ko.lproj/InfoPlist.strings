@@ -1,0 +1,5 @@
+/* ko の Info.plist の訳。scripts/build_strings.py で作る */
+
+"CFBundleDisplayName" = "코골이 알람";
+"NSMicrophoneUsageDescription" = "자는 동안 코골이를 감지하는 데 마이크를 사용합니다. 코골이로 판정한 몇 초만 기기 안에 녹음하며(설정에서 끌 수 있습니다), 1주일 뒤 자동으로 삭제합니다. 기기 밖으로는 보내지 않습니다.";
+"NSAlarmKitUsageDescription" = "취침 시간에 아직 모니터링을 시작하지 않았을 때 시계 앱의 알람과 같은 알람을 울리는 데 사용합니다.";

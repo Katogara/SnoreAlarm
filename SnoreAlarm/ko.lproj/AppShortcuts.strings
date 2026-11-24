@@ -1,0 +1,4 @@
+/* ko の AppShortcuts の訳。scripts/build_strings.py で作る (手で直さず scripts/translations/ko.json を直す) */
+
+"${applicationName}で監視が必要か調べる" = "${applicationName}에서 모니터링이 필요한지 확인";
+"${applicationName}で監視を開始" = "${applicationName}에서 모니터링 시작";
