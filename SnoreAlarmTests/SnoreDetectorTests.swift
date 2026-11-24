@@ -587,6 +587,19 @@ final class MonitoringScheduleTests: XCTestCase {
         let pruned = AlarmSettings.prunedDays(["2026-10-19", "2026-10-20", "2026-10-21"], now: date(21, 12, 0), calendar: calendar)
         XCTAssertEqual(pruned, ["2026-10-20", "2026-10-21"])
     }
+
+    /// あとでもう一度鳴らすアラームは、まだ来ておらず、監視中でなく、休む夜でもないときだけ鳴らす
+    func testSnoozeAlarmDate() {
+        var schedule = MonitoringSchedule(isOn: true, startMinutes: 23 * 60, endMinutes: 7 * 60)
+        let now = date(21, 23, 5)
+        let snooze = date(21, 23, 20)
+        XCTAssertEqual(schedule.snoozeAlarmDate(snooze, now: now, isMonitoring: false, calendar: calendar), snooze)
+        XCTAssertNil(schedule.snoozeAlarmDate(nil, now: now, isMonitoring: false, calendar: calendar))
+        XCTAssertNil(schedule.snoozeAlarmDate(snooze, now: date(21, 23, 30), isMonitoring: false, calendar: calendar))
+        XCTAssertNil(schedule.snoozeAlarmDate(snooze, now: now, isMonitoring: true, calendar: calendar))
+        schedule.skipDays = ["2026-10-21"]
+        XCTAssertNil(schedule.snoozeAlarmDate(snooze, now: now, isMonitoring: false, calendar: calendar))
+    }
 }
 
 final class WatchAlertTests: XCTestCase {
