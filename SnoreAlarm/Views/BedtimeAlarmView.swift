@@ -5,6 +5,7 @@ import SwiftUI
 /// アラームが使えない iOS 26 より前は、「始め忘れの防止」として知らせ方を選ぶ画面になる
 struct BedtimeAlarmView: View {
     @Environment(SnoreMonitor.self) private var monitor
+    @Environment(SubscriptionStore.self) private var subscription
     @Environment(\.dismiss) private var dismiss
 
     @AppStorage(AlarmSettings.Key.scheduleEnabled) private var scheduleEnabled = AlarmSettings.Default.scheduleEnabled
@@ -140,6 +141,17 @@ struct BedtimeAlarmView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if !subscription.canMonitor {
+                    Section {
+                        Label {
+                            PhraseText("サブスクリプションに登録していないため、アラームもお知らせも出しません。登録は「設定」からできます。")
+                        } icon: {
+                            Image(systemName: "exclamationmark.circle")
+                        }
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    }
+                }
                 if BedtimeAlarm.isSupported {
                     alarmSection
                 }

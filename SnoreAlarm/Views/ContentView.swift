@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(SnoreMonitor.self) private var monitor
+    @Environment(SubscriptionStore.self) private var subscription
     @State private var showingSettings = false
     @State private var showingBedtimeAlarm = false
     /// 「あとでもう一度鳴らす」の表示を時刻に合わせて切り替えるための時計
@@ -139,6 +140,13 @@ struct ContentView: View {
             // List の Section に付けると行ごとに付いて、開いた直後に閉じてしまうため、ここで出す
             .sheet(isPresented: $showingWatchTest) {
                 WatchTestSheet()
+            }
+            // 登録していないのに監視を始めようとしたとき (寝る時刻のアラームからを含む)
+            .sheet(isPresented: Binding(
+                get: { subscription.isPaywallPresented && hasCompletedOnboarding },
+                set: { subscription.isPaywallPresented = $0 }
+            )) {
+                PaywallView()
             }
             .onChange(of: alertDevice) {
                 Task { await monitor.prepareAlerts() }
@@ -559,4 +567,5 @@ private struct LogRow: View {
     ContentView()
         .environment(SnoreMonitor())
         .environment(SnorePlayer())
+        .environment(SubscriptionStore.shared)
 }

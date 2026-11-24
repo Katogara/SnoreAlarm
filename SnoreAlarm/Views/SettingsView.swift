@@ -12,6 +12,8 @@ struct SettingsView: View {
     @AppStorage(AlarmSettings.Key.recordSnores) private var recordSnores = AlarmSettings.Default.recordSnores
     @AppStorage(AlarmSettings.Key.dayBoundaryMinutes) private var dayBoundaryMinutes = AlarmSettings.Default.dayBoundaryMinutes
     @AppStorage(AlarmSettings.Key.watchFallback) private var watchFallback = AlarmSettings.Default.watchFallback
+    @State private var showingPaywall = false
+    @State private var showingManage = false
 
     var body: some View {
         NavigationStack {
@@ -98,6 +100,8 @@ struct SettingsView: View {
                     PhraseText("この時刻から翌日のこの時刻の前までに始めた監視を一晩としてまとめ、最初の開始から最後の終了までをグラフにします (初期値 12:00)。昼に眠る場合は、起きている時間帯の時刻にしてください。")
                 }
 
+                SubscriptionSection(showingPaywall: $showingPaywall, showingManage: $showingManage)
+
                 Section {
                     Button("はじめの説明を見る") {
                         dismiss()
@@ -114,6 +118,10 @@ struct SettingsView: View {
                 DiagnosticsSection()
                 #endif
             }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallView()
+            }
+            .manageSubscriptionsSheet(isPresented: $showingManage)
             .navigationTitle("設定")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
