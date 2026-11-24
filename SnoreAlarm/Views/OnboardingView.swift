@@ -1,19 +1,122 @@
 import SwiftUI
 
-/// 初回起動時の案内。いびきを知らせる端末 (iPhone / Apple Watch / 両方) を選ぶ。あとからメイン画面で切り替えられる。
+/// 初回起動時の案内。紙芝居のように左へめくって、アプリが誰のためのものかを伝え、
+/// 最後のページでいびきを知らせる端末 (iPhone / Apple Watch / 両方) を選んでメイン画面に移る。
+/// 端末はあとからメイン画面で切り替えられる。設定の「はじめの説明を見る」から、もう一度見られる
 struct OnboardingView: View {
     @Environment(SnoreMonitor.self) private var monitor
     @AppStorage(AlarmSettings.Key.alertDevice) private var alertDevice = AlarmSettings.Default.alertDevice
     @AppStorage(AlarmSettings.Key.hasCompletedOnboarding) private var hasCompletedOnboarding = false
     @State private var selection: AlertDevice?
+    @State private var page = 0
+
+    /// 紙芝居のページ。この後ろに端末を選ぶページが付く
+    private static let stories: [StoryPage] = [
+        StoryPage(symbol: "bed.double.fill", accent: "zzz",
+                  colors: [Color(red: 0.10, green: 0.12, blue: 0.32), Color(red: 0.24, green: 0.20, blue: 0.52)],
+                  title: "寝る姿勢で、いびきをかく人へ",
+                  lines: ["このアプリは、特定の寝る姿勢のときだけいびきをかいてしまう人のためのアプリです。"]),
+        StoryPage(symbol: "cloud.drizzle.fill", accent: nil,
+                  colors: [Color(red: 0.20, green: 0.24, blue: 0.36), Color(red: 0.36, green: 0.40, blue: 0.52)],
+                  title: "寝返りを打てればいいのに",
+                  lines: ["ほんとうは寝返りを打てればいいのですが、寝ているあいだは思いどおりになりません。",
+                          "翌朝、頭がずーんと重くて、つらい気持ちになります。"]),
+        StoryPage(symbol: "iphone.radiowaves.left.and.right", accent: nil,
+                  colors: [Color(red: 0.26, green: 0.16, blue: 0.50), Color(red: 0.50, green: 0.30, blue: 0.72)],
+                  title: "ブブっとお知らせ",
+                  lines: ["そんなあなたに、いびきをかき始めたらバイブでブブっとお知らせして、寝返りを促します。"]),
+        StoryPage(symbol: "stethoscope", accent: nil,
+                  colors: [Color(red: 0.06, green: 0.30, blue: 0.36), Color(red: 0.14, green: 0.48, blue: 0.52)],
+                  title: "いつもいびきをかく人は",
+                  lines: ["いつもいびきをかく人や、姿勢に関係なくいびきをかく人は、このアプリではなく、適切な医療機関で診断や治療を受けてください。",
+                          "医者にかかる踏ん切りがつかない方は、アプリ「いびきラボ」(Reviva Softworks Ltd) などで測ってみるのもおすすめです。"]),
+        StoryPage(symbol: "sun.horizon.fill", accent: nil,
+                  colors: [Color(red: 0.98, green: 0.55, blue: 0.30), Color(red: 1.00, green: 0.80, blue: 0.45)],
+                  title: "より良い朝を",
+                  lines: ["このアプリで、より良い朝を迎えられますように。"]),
+    ]
+
+    /// 端末を選ぶページの番号
+    private static var devicePage: Int { stories.count }
+
+    private var isStory: Bool { page < Self.devicePage }
 
     var body: some View {
+        ZStack {
+            background
+                .ignoresSafeArea()
+                .animation(.easeInOut(duration: 0.5), value: page)
+
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button("スキップ") {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { page = Self.devicePage }
+                    }
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white.opacity(0.8))
+                    .opacity(isStory ? 1 : 0)
+                    .disabled(!isStory)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
+
+                TabView(selection: $page) {
+                    ForEach(Self.stories.indices, id: \.self) { index in
+                        StoryCard(story: Self.stories[index], number: index + 1, total: Self.stories.count,
+                                  isCurrent: page == index)
+                            .tag(index)
+                    }
+                    deviceChoicePage
+                        .tag(Self.devicePage)
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+
+                StoryDots(count: Self.devicePage + 1, current: page, onDark: isStory)
+                    .padding(.vertical, 12)
+
+                if isStory {
+                    Button {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) { page += 1 }
+                    } label: {
+                        Text("次へ")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity, minHeight: 30)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.white.opacity(0.25))
+                    .controlSize(.large)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                }
+            }
+        }
+        .interactiveDismissDisabled()
+        .onAppear {
+            // もう一度見るときは、いま選んでいる端末を選んだ状態にしておく
+            if UserDefaults.standard.object(forKey: AlarmSettings.Key.alertDevice) != nil {
+                selection = alertDevice
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var background: some View {
+        if isStory {
+            LinearGradient(colors: Self.stories[page].colors, startPoint: .top, endPoint: .bottom)
+        } else {
+            Color(.systemBackground)
+        }
+    }
+
+    /// 最後のページ。知らせる端末を選んで、メイン画面に移る
+    private var deviceChoicePage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("いびきアラームへようこそ")
-                        .font(.title.bold())
-                    PhraseText("いびきが続いたときに、振動で知らせて寝返りを促します。どの端末で知らせるかを選んでください。あとからメイン画面で切り替えられます。")
+                    Text("知らせる端末を選んでください")
+                        .font(.title2.bold())
+                    PhraseText("いびきが続いたときに、どの端末の振動で知らせるかを選んでください。あとからメイン画面で切り替えられます。")
                         .foregroundStyle(.secondary)
                 }
 
@@ -43,7 +146,6 @@ struct OnboardingView: View {
             }
             .padding()
         }
-        .interactiveDismissDisabled()
     }
 
     private func finish() {
@@ -51,6 +153,120 @@ struct OnboardingView: View {
         alertDevice = selection
         hasCompletedOnboarding = true
         Task { await monitor.prepareAlerts() }
+    }
+}
+
+/// 紙芝居の 1 枚分の中身
+private struct StoryPage {
+    /// 絵にする SF Symbols
+    let symbol: String
+    /// 絵の右上に浮かべる小さな SF Symbols (寝息の zzz など)
+    let accent: String?
+    /// 背景のグラデーション (上から下へ)。夜から朝へ移っていく
+    let colors: [Color]
+    let title: String
+    let lines: [String]
+}
+
+/// 紙芝居の 1 枚。紙の色のカードに、上に絵、下に文を置く。めくって来たときに絵が弾んで出てくる
+private struct StoryCard: View {
+    let story: StoryPage
+    let number: Int
+    let total: Int
+    let isCurrent: Bool
+    @State private var appeared = false
+
+    /// 紙の色と文字の色。暗い画面の設定でも紙は明るいままにする
+    private static let paper = Color(red: 1.0, green: 0.98, blue: 0.94)
+    private static let ink = Color(red: 0.22, green: 0.20, blue: 0.26)
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 22) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: story.colors.map { $0.opacity(0.18) },
+                                             startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 170, height: 170)
+                    Image(systemName: story.symbol)
+                        .font(.system(size: 76))
+                        .foregroundStyle(LinearGradient(colors: story.colors.reversed(),
+                                                        startPoint: .top, endPoint: .bottom))
+                        .symbolEffect(.pulse, isActive: isCurrent && story.symbol.contains("radiowaves"))
+                        .scaleEffect(appeared ? 1 : 0.5)
+                        .rotationEffect(.degrees(appeared ? 0 : -10))
+                        .animation(.spring(response: 0.55, dampingFraction: 0.5), value: appeared)
+                    if let accent = story.accent {
+                        Image(systemName: accent)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(story.colors.last ?? .indigo)
+                            .offset(x: 62, y: appeared ? -62 : -40)
+                            .opacity(appeared ? 1 : 0)
+                            .animation(.easeOut(duration: 0.8).delay(0.25), value: appeared)
+                    }
+                }
+                .padding(.top, 28)
+                .accessibilityHidden(true)
+
+                Text("\(number) / \(total)")
+                    .font(.caption.monospacedDigit().bold())
+                    .foregroundStyle(Self.ink.opacity(0.45))
+
+                PhraseText(story.title)
+                    .font(.system(.title2, design: .rounded, weight: .bold))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Self.ink)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(story.lines, id: \.self) { line in
+                        PhraseText(line)
+                    }
+                }
+                .font(.system(.body, design: .rounded))
+                .foregroundStyle(Self.ink.opacity(0.85))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 12)
+                .animation(.easeOut(duration: 0.5).delay(0.15), value: appeared)
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 28)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 28)
+                    .fill(Self.paper)
+                    .shadow(color: .black.opacity(0.25), radius: 18, y: 10)
+            )
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .onAppear { if isCurrent { appeared = true } }
+        .onChange(of: isCurrent) { _, current in
+            // めくって来たら弾ませて出し、離れたら元に戻しておく (次に来たときにもう一度弾ませるため)
+            appeared = current
+        }
+    }
+}
+
+/// ページの位置。今のページだけ横に伸びた丸
+private struct StoryDots: View {
+    let count: Int
+    let current: Int
+    /// 暗い背景の上 (紙芝居のページ) なら白、端末を選ぶページなら アクセントの色
+    let onDark: Bool
+
+    var body: some View {
+        let color: Color = onDark ? .white : .accentColor
+        HStack(spacing: 8) {
+            ForEach(0..<count, id: \.self) { index in
+                Capsule()
+                    .fill(index == current ? color : color.opacity(0.3))
+                    .frame(width: index == current ? 24 : 8, height: 8)
+            }
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.6), value: current)
+        .accessibilityHidden(true)
     }
 }
 

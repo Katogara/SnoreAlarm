@@ -98,6 +98,18 @@ struct SettingsView: View {
                     PhraseText("この時刻から翌日のこの時刻の前までに始めた監視を一晩としてまとめ、最初の開始から最後の終了までをグラフにします (初期値 12:00)。昼に眠る場合は、起きている時間帯の時刻にしてください。")
                 }
 
+                Section {
+                    Button("はじめの説明を見る") {
+                        dismiss()
+                        // 設定の画面が閉じてから、メイン画面に説明を出す (画面を 2 つ同時には出せないため)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                            UserDefaults.standard.set(false, forKey: AlarmSettings.Key.hasCompletedOnboarding)
+                        }
+                    }
+                } header: {
+                    Text("このアプリについて")
+                }
+
                 #if DIAGNOSTICS
                 DiagnosticsSection()
                 #endif
