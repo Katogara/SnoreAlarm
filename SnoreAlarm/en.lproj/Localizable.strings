@@ -153,7 +153,6 @@
 "アプリ" = "App";
 "アプリを自動で開く" = "Open App Automatically";
 "アプリを自動で開く設定" = "Open the App Automatically";
-"アラーム" = "Alarm";
 "アラームから監視を開始" = "Start Monitoring from Alarm";
 "アラームが許可されていないため、代わりに通知で知らせます。「設定」アプリでいびきアラームを開き、アラームを許可してください。" = "Alarms aren’t allowed, so you’ll get a notification instead. Open Snore Alarm in the Settings app and allow alarms.";
 "アラームが鳴ります" = "Alarm on";
@@ -291,7 +290,6 @@
 "振動の長さ %lld 秒" = "Vibration Length: %1$lld s";
 "振動をテスト" = "Test Vibration";
 "振動を止める" = "Stop Vibration";
-"振動アラーム" = "Vibration Alerts";
 "振動中" = "Vibrating";
 "日付で選ぶ" = "By Date";
 "日付は、お知らせの時刻が来る日で選んでください。" = "Choose dates by the day the reminder time falls on.";
