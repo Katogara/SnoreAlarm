@@ -62,3 +62,13 @@ jobs:
           name: SnoreAlarm-unsigned-ipa
           path: SnoreAlarm.ipa
           retention-days: 30
+
+      # 訳す文の一覧を集め、英語の訳がない文を書き出す (訳の抜けを Windows から調べるため)
+      - name: Collect localizable strings
+        run: python3 scripts/collect_loc_keys.py build loc-report
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loc-report
+          path: loc-report
+          retention-days: 30
