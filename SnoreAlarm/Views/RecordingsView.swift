@@ -33,7 +33,7 @@ struct RecordingsView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(recording.date.formatted(date: .abbreviated, time: .standard))
                                         .font(.subheadline.monospacedDigit())
-                                    Text(recording.kindLabel + String(format: "%.1f秒", recording.duration))
+                                    Text(verbatim: recording.kindLabel + String(localized: "\(String(format: "%.1f", recording.duration))秒"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -90,6 +90,6 @@ struct PlayButton: View {
                 .font(.title2)
         }
         .buttonStyle(.borderless)
-        .accessibilityLabel(isPlaying ? "停止" : "再生")
+        .accessibilityLabel(isPlaying ? String(localized: "停止") : String(localized: "再生"))
     }
 }

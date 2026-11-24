@@ -32,7 +32,7 @@ struct LevelMeter: View {
                     .monospacedDigit()
                 Spacer()
                 if let thresholdDB {
-                    Text(String(format: "しきい値 %.0f dB", thresholdDB))
+                    Text("しきい値 \(String(format: "%.0f", thresholdDB)) dB")
                         .monospacedDigit()
                 }
             }

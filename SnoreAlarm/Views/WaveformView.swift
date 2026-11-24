@@ -47,7 +47,7 @@ struct WaveformView: View {
                 Spacer()
                 Text(peakText)
                 Spacer()
-                Text(String(format: "%.1f秒", waveform.duration))
+                Text("\(String(format: "%.1f", waveform.duration))秒")
             }
             .font(.caption2.monospacedDigit())
             .foregroundStyle(.secondary)
@@ -58,7 +58,7 @@ struct WaveformView: View {
     }
 
     private var peakText: String {
-        waveform.peakDB.isFinite ? String(format: "最大 %.0f dB (線は -20・-40 dB)", waveform.peakDB) : "無音"
+        waveform.peakDB.isFinite ? String(localized: "最大 \(String(format: "%.0f", waveform.peakDB)) dB (線は -20・-40 dB)") : String(localized: "無音")
     }
 }
 

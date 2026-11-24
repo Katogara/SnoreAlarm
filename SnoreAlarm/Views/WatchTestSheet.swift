@@ -57,7 +57,7 @@ private struct WatchTestIllustration: View {
             }
         }
 
-        var caption: String {
+        var caption: LocalizedStringResource {
             switch self {
             case .showOK, .tapOK: "① OK をタップ"
             case .lock: "② すぐにサイドボタンで画面をロック"

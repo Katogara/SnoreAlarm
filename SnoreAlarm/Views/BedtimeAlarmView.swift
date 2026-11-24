@@ -21,7 +21,7 @@ struct BedtimeAlarmView: View {
 
     /// 画面の名前。メイン画面のボタンの読み上げにも使う
     @MainActor
-    static var title: String { BedtimeAlarm.isSupported ? "寝る時刻のアラーム" : "始め忘れの防止" }
+    static var title: String { BedtimeAlarm.isSupported ? String(localized: "寝る時刻のアラーム") : String(localized: "始め忘れの防止") }
 
     /// 始め忘れの防止のやり方
     enum StartGuard: String, Identifiable {
@@ -38,10 +38,10 @@ struct BedtimeAlarmView: View {
 
         var label: String {
             switch self {
-            case .off: "使わない"
-            case .notify: "通知で知らせる"
-            case .alarm: "アラームで知らせる"
-            case .autoOpen: "アプリを自動で開く"
+            case .off: String(localized: "使わない")
+            case .notify: String(localized: "通知で知らせる")
+            case .alarm: String(localized: "アラームで知らせる")
+            case .autoOpen: String(localized: "アプリを自動で開く")
             }
         }
 
@@ -114,18 +114,18 @@ struct BedtimeAlarmView: View {
     }
 
     private var skipFooter: String {
-        var text = "夜勤の日など、知らせてほしくない夜を選びます。休む夜は、通知もアラームも出さず、アプリを自動で開くこともしません。"
+        var text = [String(localized: "夜勤の日など、知らせてほしくない夜を選びます。休む夜は、通知もアラームも出さず、アプリを自動で開くこともしません。")]
         if skipMode == AlarmSettings.SkipMode.weekdays.rawValue {
-            text += "選んだ曜日は毎週休みます。「曜日で選ぶ」に変えると、日付で選んだ休む日は消えます。"
+            text.append(String(localized: "選んだ曜日は毎週休みます。「曜日で選ぶ」に変えると、日付で選んだ休む日は消えます。"))
         } else {
-            text += "日付は、お知らせの時刻が来る日で選んでください。"
+            text.append(String(localized: "日付は、お知らせの時刻が来る日で選んでください。"))
         }
         if startGuard == .alarm {
-            text += "メイン画面の上に並ぶ日付 (曜日) を押しても、休む日を選べます。"
+            text.append(String(localized: "メイン画面の上に並ぶ日付 (曜日) を押しても、休む日を選べます。"))
         } else {
-            text += "急に休みたいときは、メイン画面の「今夜は知らせない」を使ってください。"
+            text.append(String(localized: "急に休みたいときは、メイン画面の「今夜は知らせない」を使ってください。"))
         }
-        return text
+        return Phrases.joinSentences(text)
     }
 
     /// 監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
@@ -204,7 +204,7 @@ struct BedtimeAlarmView: View {
                     )
                     .contentTransition(.symbolEffect(.replace))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(startGuard == .alarm ? MonitoringSchedule.timeText(scheduleStartMinutes) : "オフ")
+                    Text(startGuard == .alarm ? MonitoringSchedule.timeText(scheduleStartMinutes) : String(localized: "オフ"))
                         .font(.system(size: 34, weight: .semibold, design: .rounded).monospacedDigit())
                         .contentTransition(.numericText())
                     PhraseText(startGuard == .alarm ? "まだ監視していなければ鳴ります" : "寝る時刻に監視を始めていなければ鳴らします")
@@ -258,7 +258,7 @@ struct BedtimeAlarmView: View {
                 }
             }
         } header: {
-            Text(BedtimeAlarm.isSupported ? "ほかの知らせ方" : "始め忘れの防止")
+            Text(BedtimeAlarm.isSupported ? String(localized: "ほかの知らせ方") : String(localized: "始め忘れの防止"))
         } footer: {
             if timesAreSame {
                 PhraseText("お知らせと自動終了に別の時刻を指定してください。")
@@ -307,7 +307,7 @@ struct BedtimeAlarmView: View {
         } header: {
             Text("休む日")
         } footer: {
-            PhraseText(skipFooter)
+            PhraseText(verbatim: skipFooter)
         }
     }
 
@@ -315,14 +315,14 @@ struct BedtimeAlarmView: View {
     private var skipDaysSummary: String {
         let today = MonitoringSchedule.dayKey(Date())
         let count = AlarmSettings.parseDays(skipDays).filter { $0 >= today }.count
-        return count == 0 ? "なし" : "\(count)日"
+        return count == 0 ? String(localized: "なし") : String(localized: "\(count)日")
     }
 }
 
 /// 休む曜日を 7 つの丸で選ぶ。選んだ曜日を塗りつぶす
 private struct WeekdayPicker: View {
     @Binding var selection: Set<Int>
-    private static let symbols = ["日", "月", "火", "水", "木", "金", "土"]
+    private static var symbols: [String] { AlarmStripSection.weekdaySymbols }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -338,6 +338,8 @@ private struct WeekdayPicker: View {
                 } label: {
                     Text(Self.symbols[weekday - 1])
                         .font(.subheadline.weight(isSelected ? .bold : .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                         .foregroundStyle(isSelected ? Color.white : Color.primary)
                         .frame(width: 36, height: 36)
                         .background(Circle().fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.15)))
@@ -345,7 +347,7 @@ private struct WeekdayPicker: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(Self.symbols[weekday - 1])曜日")
+                .accessibilityLabel(Text(verbatim: AlarmStripSection.weekdayNames[weekday - 1]))
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }

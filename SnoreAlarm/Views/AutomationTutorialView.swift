@@ -15,7 +15,7 @@ struct AutomationTutorialView: View {
     /// 手順の数 (0 ページ目は前置き、最後のページは完了)
     static let stepCount = 5
     /// オートメーションに入れるアクションの名前 (`StartMonitoringIfNeededIntent` の表示名)
-    static let actionName = "必要なら監視を開始"
+    static let actionName = String(localized: "必要なら監視を開始")
 
     /// 監視を自動で始める夜の時間帯 (お知らせ・自動終了の時刻か、22:00〜5:00)
     private let window = AlarmSettings.load().schedule.nightWindow
@@ -34,7 +34,7 @@ struct AutomationTutorialView: View {
                 }
                 .id(page)
             }
-            .navigationTitle((1...Self.stepCount).contains(page) ? "手順 \(page) / \(Self.stepCount)" : "")
+            .navigationTitle((1...Self.stepCount).contains(page) ? String(localized: "手順 \(page) / \(Self.stepCount)") : "")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -121,8 +121,8 @@ struct AutomationTutorialView: View {
                  tip: "検索欄は画面の下のふちに小さく隠れています。下のふちに指を置いて、上へすっとなぞると出てきます。「監視を開始」や「監視が必要か調べる」ではなく、「\(Self.actionName)」を選んでください。") {
             MockScreen {
                 MockSheet {
-                    MockSearchField(text: "いびき")
-                    MockNamedAction(title: Self.actionName)
+                    MockSearchField(text: String(localized: "いびき"))
+                    MockNamedAction(title: "\(Self.actionName)")
                         .highlight()
                     MockNamedAction(title: "監視を開始")
                     MockNamedAction(title: "監視が必要か調べる")
@@ -182,7 +182,7 @@ struct AutomationTutorialView: View {
                     MockSettingRow(title: "通知") { MockToggle(isOn: false) }
                 }
                 .background(Mock.card, in: .rect(cornerRadius: 14))
-                MockNamedAction(title: Self.actionName)
+                MockNamedAction(title: "\(Self.actionName)")
             }
             PhraseText("確かめたら、左上の「＜」で戻ります。「オートメーション」の一覧に出ていれば、1つ目のオートメーションの完成です。")
         }
@@ -258,15 +258,15 @@ struct AutomationTutorialView: View {
     }
 
     private var nextTitle: String {
-        if page == 0 { return "はじめる" }
-        if page == Self.stepCount { return "できた！" }
-        return page > Self.stepCount ? "とじる" : "次へ"
+        if page == 0 { return String(localized: "はじめる") }
+        if page == Self.stepCount { return String(localized: "できた！") }
+        return page > Self.stepCount ? String(localized: "とじる") : String(localized: "次へ")
     }
 }
 
 /// 入れたアクションの行 (名前を指定)
 private struct MockNamedAction: View {
-    let title: String
+    let title: LocalizedStringResource
 
     var body: some View {
         HStack(spacing: 10) {
@@ -308,9 +308,9 @@ private struct AppMark: View {
 // MARK: - 手順のページの型
 
 private struct StepPage<Content: View>: View {
-    let title: String
-    let message: String
-    let tip: String?
+    let title: LocalizedStringResource
+    let message: LocalizedStringResource
+    let tip: LocalizedStringResource?
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -428,7 +428,7 @@ private struct MockCircleButton: View {
 }
 
 private struct MockPill: View {
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         Text(text)
@@ -442,7 +442,7 @@ private struct MockPill: View {
 }
 
 private struct MockLargeTitle: View {
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         Text(text)
@@ -453,7 +453,7 @@ private struct MockLargeTitle: View {
 
 private struct MockListRow: View {
     let systemImage: String
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
         HStack(spacing: 10) {
@@ -500,7 +500,7 @@ private struct MockSearchField: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-            Text(text.isEmpty ? "検索" : text)
+            Text(text.isEmpty ? String(localized: "検索") : text)
                 .foregroundStyle(text.isEmpty ? Mock.secondary : Mock.text)
             Spacer()
         }
@@ -514,10 +514,10 @@ private struct MockSearchField: View {
 
 private struct MockChip: View {
     let systemImage: String
-    let text: String
+    let text: LocalizedStringResource
 
     var body: some View {
-        Label(text, systemImage: systemImage)
+        Label { Text(text) } icon: { Image(systemName: systemImage) }
             .font(.caption2.bold())
             .foregroundStyle(Mock.blue)
             .lineLimit(1)
@@ -529,8 +529,8 @@ private struct MockChip: View {
 
 private struct MockTriggerRow: View {
     let color: Color
-    let title: String
-    let example: String
+    let title: LocalizedStringResource
+    let example: LocalizedStringResource
 
     var body: some View {
         HStack(spacing: 10) {
@@ -593,7 +593,7 @@ private struct MockActionRow: View {
 }
 
 private struct MockSettingRow<Trailing: View>: View {
-    let title: String
+    let title: LocalizedStringResource
     @ViewBuilder var trailing: Trailing
 
     var body: some View {

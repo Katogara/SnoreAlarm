@@ -20,7 +20,10 @@ struct AlarmStripSection: View {
 
     /// 日付で選ぶときに並べる日数
     static let dayCount = 60
-    static let weekdaySymbols = ["日", "月", "火", "水", "木", "金", "土"]
+    /// 曜日の短い名前 (日本語なら「日」「月」、英語なら「Sun」「Mon」)。日曜から
+    static var weekdaySymbols: [String] { Calendar.current.shortStandaloneWeekdaySymbols }
+    /// 曜日の名前 (日本語なら「日曜日」、英語なら「Sunday」)。読み上げに使う
+    static var weekdayNames: [String] { Calendar.current.standaloneWeekdaySymbols }
 
     private var isShown: Bool {
         scheduleEnabled && bedtimeAlarmEnabled && !autoOpenEnabled && BedtimeAlarm.isSupported && startMinutes != endMinutes
@@ -76,8 +79,8 @@ struct AlarmStripSection: View {
                     }
                     .buttonStyle(.plain)
                     .containerRelativeFrame(.horizontal, count: 7, spacing: 4)
-                    .accessibilityLabel("\(month)月\(day)日 \(Self.weekdaySymbols[weekday - 1])曜日 \(timeText)")
-                    .accessibilityValue(isOff ? "アラームを止めています" : "アラームが鳴ります")
+                    .accessibilityLabel(Text(verbatim: date.formatted(.dateTime.month(.wide).day().weekday(.wide)) + " " + timeText))
+                    .accessibilityValue(isOff ? String(localized: "アラームを止めています") : String(localized: "アラームが鳴ります"))
                 }
             }
             .scrollTargetLayout()
@@ -116,8 +119,8 @@ struct AlarmStripSection: View {
                 }
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)
-                .accessibilityLabel("\(Self.weekdaySymbols[weekday - 1])曜日 \(timeText)")
-                .accessibilityValue(isOff ? "毎週アラームを止めています" : "アラームが鳴ります")
+                .accessibilityLabel(Text(verbatim: Self.weekdayNames[weekday - 1] + " " + timeText))
+                .accessibilityValue(isOff ? String(localized: "毎週アラームを止めています") : String(localized: "アラームが鳴ります"))
             }
         }
         .sensoryFeedback(.selection, trigger: skipWeekdays)

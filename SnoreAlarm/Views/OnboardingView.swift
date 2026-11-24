@@ -164,8 +164,8 @@ private struct StoryPage {
     let accent: String?
     /// 背景のグラデーション (上から下へ)。夜から朝へ移っていく
     let colors: [Color]
-    let title: String
-    let lines: [String]
+    let title: LocalizedStringResource
+    let lines: [LocalizedStringResource]
 }
 
 /// 紙芝居の 1 枚。紙の色のカードに、上に絵、下に文を置く。めくって来たときに絵が弾んで出てくる
@@ -218,8 +218,8 @@ private struct StoryCard: View {
                     .foregroundStyle(Self.ink)
 
                 VStack(alignment: .leading, spacing: 14) {
-                    ForEach(story.lines, id: \.self) { line in
-                        PhraseText(line)
+                    ForEach(story.lines.indices, id: \.self) { index in
+                        PhraseText(story.lines[index])
                     }
                 }
                 .font(.system(.body, design: .rounded))
@@ -273,9 +273,9 @@ private struct StoryDots: View {
 private struct DeviceChoice: View {
     let device: AlertDevice
     let symbol: String
-    let title: String
-    let detail: String
-    let note: String?
+    let title: LocalizedStringResource
+    let detail: LocalizedStringResource
+    let note: LocalizedStringResource?
     @Binding var selection: AlertDevice?
 
     var body: some View {
@@ -293,7 +293,7 @@ private struct DeviceChoice: View {
                     PhraseText(detail)
                         .font(.subheadline)
                     if let note {
-                        PhraseText("(\(note))")
+                        PhraseText(verbatim: "(" + String(localized: note) + ")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -352,7 +352,7 @@ struct WatchSetupGuide: View {
         }
     }
 
-    static let steps = [
+    static let steps: [LocalizedStringResource] = [
         "寝るときは Apple Watch を着けたままにし、iPhone の画面をロックしてください (自動ロックで可。iPhone の通知は、画面がロックされているときだけ Watch に届きます。Watch を外していると、iPhone で通知音が鳴ります)",
         "Apple Watch を消音モードにしてください。Watch のサイドボタンを押して (または画面の下から上にスワイプして) コントロールセンターを開き、ベルのボタンをタップします。消音モードでも振動で知らせます。消音モードにしないと、Watch から通知音が鳴って隣の人を起こしてしまいます",
         "いびきアラームの通知を許可し「サウンド」をオンにしてください。オンになっているかはアプリが確かめて、下に結果を出します (Watch はサウンド付きの通知で振動します。Watch に届いているあいだ iPhone は鳴りません)",
@@ -374,7 +374,7 @@ struct WatchSetupGuide: View {
                 PhraseText("Apple Watch で知らせる設定にすると、通知の許可を求める画面が出ます")
                     .foregroundStyle(.secondary)
             } else {
-                Label(readiness.authorized ? "通知のサウンドがオフです" : "通知が許可されていません",
+                Label(readiness.authorized ? String(localized: "通知のサウンドがオフです") : String(localized: "通知が許可されていません"),
                       systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                 NotificationSettingsButton()

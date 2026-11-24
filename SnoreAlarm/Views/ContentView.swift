@@ -38,17 +38,17 @@ struct ContentView: View {
 
                 if monitor.isActive || !monitor.log.isEmpty {
                     Section("今回の記録") {
-                        LabeledContent("いびき検知", value: "\(monitor.snoreCount) 回")
+                        LabeledContent("いびき検知", value: String(localized: "\(monitor.snoreCount) 回"))
                         if monitor.noiseCount > 0 {
-                            LabeledContent("いびきに数えなかった物音", value: "\(monitor.noiseCount) 回")
+                            LabeledContent("いびきに数えなかった物音", value: String(localized: "\(monitor.noiseCount) 回"))
                         }
                         if monitor.pausedSoundCount > 0 {
-                            LabeledContent("休止中に録音した音", value: "\(monitor.pausedSoundCount) 回")
+                            LabeledContent("休止中に録音した音", value: String(localized: "\(monitor.pausedSoundCount) 回"))
                         }
-                        LabeledContent("振動アラーム", value: "\(monitor.alarmCount) 回")
+                        LabeledContent("振動アラーム", value: String(localized: "\(monitor.alarmCount) 回"))
                         if monitor.watchAlertCount > 0 || monitor.iPhoneFallbackCount > 0 {
-                            LabeledContent("Apple Watch に通知", value: "\(monitor.watchAlertCount) 回")
-                            LabeledContent("代わりに iPhone で振動", value: "\(monitor.iPhoneFallbackCount) 回")
+                            LabeledContent("Apple Watch に通知", value: String(localized: "\(monitor.watchAlertCount) 回"))
+                            LabeledContent("代わりに iPhone で振動", value: String(localized: "\(monitor.iPhoneFallbackCount) 回"))
                         }
                         if let startedAt = monitor.startedAt {
                             LabeledContent("開始時刻", value: startedAt.formatted(date: .omitted, time: .shortened))
@@ -163,7 +163,7 @@ struct ContentView: View {
             )) {
                 Button("OK", role: .cancel) {}
             } message: {
-                PhraseText(monitor.errorMessage ?? "")
+                PhraseText(verbatim: monitor.errorMessage ?? "")
             }
         }
     }
@@ -197,9 +197,7 @@ private struct AlertDeviceSection: View {
                         PhraseText("Apple Watch の振動で知らせます (パートナーの睡眠を妨げません)。iPhone の画面をロック (自動ロックで可) し、Watch を消音モードにして (音を出さず振動だけにするため) 着けたまま寝てください。寝る前に「Watch に届くかテスト」で確かめられます。")
                     }
                     ForEach(monitor.watchProblems, id: \.self) { problem in
-                        PhraseText(problem.isBlocking
-                             ? "⚠️ \(problem.message)ため、Watch には届きません (iPhone で振動します)"
-                             : "⚠️ \(problem.message)ため、Watch が振動しないことがあります")
+                        PhraseText(verbatim: "⚠️ " + problem.summary)
                             .foregroundStyle(.orange)
                     }
                     if monitor.watchProblems.contains(where: \.fixInNotificationSettings) {
@@ -345,25 +343,45 @@ private struct TonightSkipSection: View {
         }
     }
 
-    private var what: String {
-        if autoOpenEnabled { return "通知とアプリを自動で開く仕組み" }
-        if bedtimeAlarmEnabled && BedtimeAlarm.isSupported { return "アラーム" }
-        return "通知"
+    /// 今夜休むもの。文はほかの言語に訳せるよう、休むものごとに丸ごと持つ
+    private enum Target { case autoOpen, alarm, notification }
+
+    private var target: Target {
+        if autoOpenEnabled { return .autoOpen }
+        if bedtimeAlarmEnabled && BedtimeAlarm.isSupported { return .alarm }
+        return .notification
+    }
+
+    private var weekdayFooter: LocalizedStringResource {
+        switch target {
+        case .autoOpen: "今夜は設定で休む曜日にしているため、通知とアプリを自動で開く仕組みを休みます。"
+        case .alarm: "今夜は設定で休む曜日にしているため、アラームを休みます。"
+        case .notification: "今夜は設定で休む曜日にしているため、通知を休みます。"
+        }
+    }
+
+    private var toggleFooter: LocalizedStringResource {
+        let time = MonitoringSchedule.timeText(scheduleStartMinutes)
+        switch target {
+        case .autoOpen: return "オンにすると、今夜 \(time) の通知とアプリを自動で開く仕組みを休みます。明日の夜からは元に戻ります。"
+        case .alarm: return "オンにすると、今夜 \(time) のアラームを休みます。明日の夜からは元に戻ります。"
+        case .notification: return "オンにすると、今夜 \(time) の通知を休みます。明日の夜からは元に戻ります。"
+        }
     }
 
     var body: some View {
         if schedule.isEnabled && !usesAlarmStrip {
             Section {
                 if isSkipWeekday {
-                    LabeledContent("今夜は知らせない", value: "休む曜日")
+                    LabeledContent("今夜は知らせない", value: String(localized: "休む曜日"))
                 } else {
                     Toggle("今夜は知らせない", isOn: skipTonight)
                 }
             } footer: {
                 if isSkipWeekday {
-                    PhraseText("今夜は設定で休む曜日にしているため、\(what)を休みます。")
+                    PhraseText(weekdayFooter)
                 } else {
-                    PhraseText("オンにすると、今夜 \(MonitoringSchedule.timeText(scheduleStartMinutes)) の\(what)を休みます。明日の夜からは元に戻ります。")
+                    PhraseText(toggleFooter)
                 }
             }
         }
@@ -411,7 +429,7 @@ private struct StatusCard: View {
         }
     }
 
-    private var title: String {
+    private var title: LocalizedStringResource {
         switch monitor.state {
         case .idle: "停止中"
         case .waiting: "開始待ち"
@@ -420,7 +438,7 @@ private struct StatusCard: View {
         }
     }
 
-    private var subtitle: String {
+    private var subtitle: LocalizedStringResource {
         switch monitor.state {
         case .idle:
             return "監視を開始するとマイクで周囲の音を解析します"
@@ -467,7 +485,7 @@ private struct ControlButtons: View {
                 Button(role: .destructive) {
                     monitor.stop()
                 } label: {
-                    Label(monitor.isDemo ? "デモを終了" : "監視を終了", systemImage: "stop.fill")
+                    Label(monitor.isDemo ? String(localized: "デモを終了") : String(localized: "監視を終了"), systemImage: "stop.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -526,7 +544,7 @@ private struct LogRow: View {
                 Image(systemName: symbol)
                     .foregroundStyle(color)
                     .frame(width: 20)
-                PhraseText(entry.message)
+                PhraseText(verbatim: entry.message)
                     .font(.subheadline)
                 Spacer()
                 Text(entry.date.formatted(date: .omitted, time: .standard))

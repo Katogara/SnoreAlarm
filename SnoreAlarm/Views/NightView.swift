@@ -243,7 +243,7 @@ struct NightView: View {
                 await player.showWaveform(of: recording.url)
             }
         } header: {
-            Text("\(recording.isSnore ? "選んだいびき" : "選んだ音") (\(position + 1) / \(night.recordings.count))")
+            (recording.isSnore ? Text("選んだいびき (\(position + 1) / \(night.recordings.count))") : Text("選んだ音 (\(position + 1) / \(night.recordings.count))"))
         } footer: {
             if monitor.isActive {
                 PhraseText("監視中は再生できません (再生した音をいびきと誤検知しないため)。")
@@ -256,23 +256,23 @@ struct NightView: View {
             if night.hasMonitoringRecord {
                 LabeledContent("監視していた時間",
                                value: night.periods.count > 1
-                                   ? "\(durationText(night.monitoredDuration)) (\(night.periods.count)回)"
+                                   ? String(localized: "\(durationText(night.monitoredDuration)) (\(night.periods.count)回)")
                                    : durationText(night.monitoredDuration))
             } else {
-                LabeledContent("監視していた時間", value: "記録なし")
+                LabeledContent("監視していた時間", value: String(localized: "記録なし"))
             }
-            LabeledContent("いびき (録音した回数)", value: "\(night.snores.count) 回")
+            LabeledContent("いびき (録音した回数)", value: String(localized: "\(night.snores.count) 回"))
             if night.hasMonitoringRecord && night.monitoredDuration >= 10 * 60 {
                 LabeledContent("1時間あたり",
-                               value: String(format: "%.1f 回", Double(night.snores.count) / (night.monitoredDuration / 3600)))
+                               value: String(localized: "\(String(format: "%.1f", Double(night.snores.count) / (night.monitoredDuration / 3600))) 回"))
             }
             LabeledContent("いびきの合計", value: snoreTotalText(night.snoreDuration))
             if !night.noises.isEmpty {
-                LabeledContent("いびきに数えなかった物音", value: "\(night.noises.count) 回")
+                LabeledContent("いびきに数えなかった物音", value: String(localized: "\(night.noises.count) 回"))
             }
             if !night.pauses.isEmpty {
                 LabeledContent("休止していた時間", value: durationText(night.pausedDuration))
-                LabeledContent("休止中に録音した音", value: "\(night.pausedSounds.count) 回")
+                LabeledContent("休止中に録音した音", value: String(localized: "\(night.pausedSounds.count) 回"))
             }
             if let loudest = points.filter({ $0.recording.isSnore }).max(by: { $0.db < $1.db }) {
                 LabeledContent("最大の音量",
@@ -280,11 +280,11 @@ struct NightView: View {
                                    + " (\(loudest.recording.date.formatted(date: .omitted, time: .shortened)))")
             }
             if let busiest = busiestHour(of: night) {
-                LabeledContent("多かった時間帯", value: "\(busiest.hour)時台 (\(busiest.count)回)")
+                LabeledContent("多かった時間帯", value: String(localized: "\(busiest.hour)時台 (\(busiest.count)回)"))
             }
-            LabeledContent("振動で知らせた回数", value: "\(night.alarms.count) 回")
+            LabeledContent("振動で知らせた回数", value: String(localized: "\(night.alarms.count) 回"))
             if !night.alarms.isEmpty {
-                LabeledContent("自分で止めた回数", value: "\(night.alarms.filter(\.stopped).count) 回")
+                LabeledContent("自分で止めた回数", value: String(localized: "\(night.alarms.filter(\.stopped).count) 回"))
             }
         } header: {
             Text("まとめ")
@@ -316,7 +316,7 @@ struct NightView: View {
         }
     }
 
-    private func deviceText(of device: AlarmEventStore.Event.Device) -> String {
+    private func deviceText(of device: AlarmEventStore.Event.Device) -> LocalizedStringResource {
         switch device {
         case .iPhone: "iPhone の振動"
         case .watch: "Apple Watch の振動"
@@ -343,7 +343,7 @@ struct NightView: View {
             .disabled(length <= min(Self.minVisibleLength, span))
             .accessibilityLabel("拡大")
             Spacer()
-            Text(length >= span ? "一晩全体" : "\(durationText(length)) の範囲")
+            (length >= span ? Text("一晩全体") : Text("\(durationText(length)) の範囲"))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
             Button("全体") {
@@ -457,9 +457,9 @@ struct NightView: View {
     }
 
     private func detail(of recording: RecordingStore.Recording) -> String {
-        let duration = recording.kindLabel + String(format: "%.1f秒", recording.duration)
+        let duration = recording.kindLabel + String(localized: "\(String(format: "%.1f", recording.duration))秒")
         guard let peak = recording.peakDB ?? measuredPeaks[recording.url], peak.isFinite else { return duration }
-        return duration + String(format: "・最大 %.0f dB", peak)
+        return duration + String(localized: "・最大 \(String(format: "%.0f", peak)) dB")
     }
 
     private func busiestHour(of night: NightRecord) -> (hour: Int, count: Int)? {
@@ -473,11 +473,11 @@ struct NightView: View {
 
     private func durationText(_ interval: TimeInterval) -> String {
         let minutes = Int(interval / 60)
-        return minutes >= 60 ? "\(minutes / 60)時間\(minutes % 60)分" : "\(minutes)分"
+        return minutes >= 60 ? String(localized: "\(minutes / 60)時間\(minutes % 60)分") : String(localized: "\(minutes)分")
     }
 
     private func snoreTotalText(_ interval: TimeInterval) -> String {
         let seconds = Int(interval.rounded())
-        return seconds >= 60 ? "\(seconds / 60)分\(seconds % 60)秒" : "\(seconds)秒"
+        return seconds >= 60 ? String(localized: "\(seconds / 60)分\(seconds % 60)秒") : String(localized: "\(seconds)秒")
     }
 }
