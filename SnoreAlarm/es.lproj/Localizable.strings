@@ -153,7 +153,6 @@
 "アプリ" = "App";
 "アプリを自動で開く" = "Abrir la app automáticamente";
 "アプリを自動で開く設定" = "Abrir la app automáticamente";
-"アラーム" = "Alarma";
 "アラームから監視を開始" = "Iniciar vigilancia desde la alarma";
 "アラームが許可されていないため、代わりに通知で知らせます。「設定」アプリでいびきアラームを開き、アラームを許可してください。" = "Las alarmas no están permitidas, así que recibirás una notificación en su lugar. Abre Alarma Ronquidos en la app Ajustes y permite las alarmas.";
 "アラームが鳴ります" = "Alarma activada";
@@ -291,7 +290,6 @@
 "振動の長さ %lld 秒" = "Duración de la vibración: %1$lld s";
 "振動をテスト" = "Probar vibración";
 "振動を止める" = "Detener vibración";
-"振動アラーム" = "Avisos por vibración";
 "振動中" = "Vibrando";
 "日付で選ぶ" = "Por fecha";
 "日付は、お知らせの時刻が来る日で選んでください。" = "Elige las fechas según el día en que cae la hora del recordatorio.";
