@@ -47,7 +47,8 @@ struct AlarmStripSection: View {
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
             } header: {
-                Text("アラーム")
+                // アプリ名「いびきアラーム」と被らないよう、右上の目覚ましのボタンから開く画面と同じ名前とアイコンにする
+                Label("寝る時刻のアラーム", systemImage: "alarm")
             } footer: {
                 PhraseText(byWeekday
                            ? "曜日を押すと、毎週その曜日のアラームを止めます。もう一度押すと元に戻ります。"

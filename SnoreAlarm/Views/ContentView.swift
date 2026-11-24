@@ -45,7 +45,7 @@ struct ContentView: View {
                         if monitor.pausedSoundCount > 0 {
                             LabeledContent("休止中に録音した音", value: String(localized: "\(monitor.pausedSoundCount) 回"))
                         }
-                        LabeledContent("振動アラーム", value: String(localized: "\(monitor.alarmCount) 回"))
+                        LabeledContent("振動で知らせた回数", value: String(localized: "\(monitor.alarmCount) 回"))
                         if monitor.watchAlertCount > 0 || monitor.iPhoneFallbackCount > 0 {
                             LabeledContent("Apple Watch に通知", value: String(localized: "\(monitor.watchAlertCount) 回"))
                             LabeledContent("代わりに iPhone で振動", value: String(localized: "\(monitor.iPhoneFallbackCount) 回"))
