@@ -1,0 +1,4 @@
+/* pt-BR の AppShortcuts の訳。scripts/build_strings.py で作る (手で直さず scripts/translations/pt-BR.json を直す) */
+
+"${applicationName}で監視が必要か調べる" = "Verificar com ${applicationName} se é preciso monitorar";
+"${applicationName}で監視を開始" = "Iniciar monitoramento com ${applicationName}";

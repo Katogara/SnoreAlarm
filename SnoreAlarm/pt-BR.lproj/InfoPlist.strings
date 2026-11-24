@@ -1,0 +1,5 @@
+/* pt-BR の Info.plist の訳。scripts/build_strings.py で作る */
+
+"CFBundleDisplayName" = "Alarme de Ronco";
+"NSMicrophoneUsageDescription" = "O microfone é usado para detectar o ronco enquanto você dorme. Só os poucos segundos considerados ronco são gravados no aparelho (dá para desativar em Ajustes) e apagados automaticamente após 1 semana. Nada sai do aparelho.";
+"NSAlarmKitUsageDescription" = "Para tocar um alarme igual ao do app Relógio na hora de dormir se o monitoramento não tiver começado.";
