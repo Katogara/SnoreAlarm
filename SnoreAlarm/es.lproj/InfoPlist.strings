@@ -1,0 +1,5 @@
+/* es の Info.plist の訳。scripts/build_strings.py で作る */
+
+"CFBundleDisplayName" = "Alarma Ronquidos";
+"NSMicrophoneUsageDescription" = "El micrófono se usa para detectar ronquidos mientras duermes. Solo se graban en el dispositivo los pocos segundos considerados ronquido (puedes desactivarlo en Ajustes), y se eliminan automáticamente al cabo de 1 semana. Nada sale del dispositivo.";
+"NSAlarmKitUsageDescription" = "Para hacer sonar una alarma como la de la app Reloj a la hora de dormir si la vigilancia no ha empezado.";

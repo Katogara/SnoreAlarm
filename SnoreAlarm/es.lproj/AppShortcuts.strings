@@ -1,0 +1,4 @@
+/* es の AppShortcuts の訳。scripts/build_strings.py で作る (手で直さず scripts/translations/es.json を直す) */
+
+"${applicationName}で監視が必要か調べる" = "Comprobar con ${applicationName} si hace falta vigilar";
+"${applicationName}で監視を開始" = "Iniciar vigilancia con ${applicationName}";
