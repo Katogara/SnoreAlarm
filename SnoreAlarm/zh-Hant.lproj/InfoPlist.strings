@@ -1,0 +1,5 @@
+/* zh-Hant の Info.plist の訳。scripts/build_strings.py で作る */
+
+"CFBundleDisplayName" = "打鼾提醒";
+"NSMicrophoneUsageDescription" = "麥克風用於在睡眠時偵測打鼾。僅將判定為打鼾的幾秒鐘錄在裝置內（可在設定中關閉），並在 1 週後自動刪除。不會傳送到裝置外。";
+"NSAlarmKitUsageDescription" = "用於在睡覺時間尚未開始監測時，響起與時鐘 App 相同的鬧鐘。";
