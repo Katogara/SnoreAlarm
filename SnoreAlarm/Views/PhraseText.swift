@@ -20,9 +20,15 @@ enum Phrases {
             .joined(separator: "\n")
     }
 
-    /// 訳した文をつなぐ。日本語はそのまま、英語などは空白をはさむ
+    /// 文と文のあいだに空白を入れない言語 (日本語・中国語)
+    static let joinsWithoutSpace: Bool = {
+        let lang = Bundle.main.preferredLocalizations.first ?? ""
+        return lang.hasPrefix("ja") || lang.hasPrefix("zh")
+    }()
+
+    /// 訳した文をつなぐ。日本語と中国語はそのまま、英語や韓国語などは空白をはさむ
     static func joinSentences(_ sentences: [String]) -> String {
-        sentences.joined(separator: isJapanese ? "" : " ")
+        sentences.joined(separator: joinsWithoutSpace ? "" : " ")
     }
 }
 
