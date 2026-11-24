@@ -4,6 +4,8 @@ struct ContentView: View {
     @Environment(SnoreMonitor.self) private var monitor
     @State private var showingSettings = false
     @State private var showingBedtimeAlarm = false
+    /// 「あとでもう一度鳴らす」の表示を時刻に合わせて切り替えるための時計
+    @State private var clock = Date()
     @State private var showingRecordings = false
     @State private var showingNight = false
     @State private var showingWatchTest = false
@@ -19,6 +21,8 @@ struct ContentView: View {
                     StatusCard()
                         .listRowInsets(EdgeInsets())
                 }
+                SnoozeSection(now: clock)
+
 
                 AlertDeviceSection(showingWatchTest: $showingWatchTest)
 
@@ -79,6 +83,12 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("いびきアラーム")
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(20))
+                    clock = Date()
+                }
+            }
             .toolbar {
                 ToolbarItemGroup(placement: .topBarLeading) {
                     Button {
@@ -195,6 +205,86 @@ private struct AlertDeviceSection: View {
     }
 }
 
+/// 「あとでもう一度鳴らす」。お風呂などで、まだ監視を始めたくないときに、15 分後か 30 分後にもう一度アラームで知らせる。
+/// 「アラームで知らせる」を使っていて、今夜まだ監視していないとき (アラームを「止める」で止めたときなど) か、
+/// 監視を始めて間もないとき (アラームの「監視を開始」で始めたときなど) に出す
+private struct SnoozeSection: View {
+    @Environment(SnoreMonitor.self) private var monitor
+    @AppStorage(AlarmSettings.Key.scheduleEnabled) private var scheduleEnabled = AlarmSettings.Default.scheduleEnabled
+    @AppStorage(AlarmSettings.Key.scheduleStartMinutes) private var scheduleStartMinutes = AlarmSettings.Default.scheduleStartMinutes
+    @AppStorage(AlarmSettings.Key.scheduleEndMinutes) private var scheduleEndMinutes = AlarmSettings.Default.scheduleEndMinutes
+    @AppStorage(AlarmSettings.Key.autoOpenEnabled) private var autoOpenEnabled = false
+    @AppStorage(AlarmSettings.Key.bedtimeAlarmEnabled) private var bedtimeAlarmEnabled = false
+    @AppStorage(AlarmSettings.Key.skipWeekdays) private var skipWeekdays = ""
+    @AppStorage(AlarmSettings.Key.skipDays) private var skipDays = ""
+    @AppStorage(AlarmSettings.Key.skipMode) private var skipMode = AlarmSettings.SkipMode.days.rawValue
+    let now: Date
+
+    /// 監視を始めてからこの時間までは、監視をやめて「あとでもう一度鳴らす」を選べる
+    private static let recentStart: TimeInterval = 30 * 60
+
+    private var usesAlarm: Bool {
+        scheduleEnabled && bedtimeAlarmEnabled && !autoOpenEnabled && BedtimeAlarm.isSupported && BedtimeAlarm.isAuthorized
+            && scheduleStartMinutes != scheduleEndMinutes
+    }
+
+    private var isMonitoring: Bool { monitor.isActive && !monitor.isDemo }
+
+    private var pendingSnooze: Date? {
+        guard let snooze = monitor.snoozeAlarmAt, snooze > now, !monitor.isActive else { return nil }
+        return snooze
+    }
+
+    private var canSnooze: Bool {
+        let schedule = AlarmSettings.load().schedule
+        if isMonitoring {
+            guard let startedAt = monitor.startedAt else { return false }
+            return now.timeIntervalSince(startedAt) < Self.recentStart
+        }
+        return !monitor.isActive && schedule.needsMonitoring(at: now, isMonitoring: false)
+    }
+
+    var body: some View {
+        if usesAlarm, let snooze = pendingSnooze {
+            Section {
+                Label {
+                    Text("\(snooze.formatted(date: .omitted, time: .shortened)) にもう一度鳴らします")
+                } icon: {
+                    Image(systemName: "alarm.fill")
+                        .foregroundStyle(.indigo)
+                }
+                Button("取り消す", role: .destructive) {
+                    monitor.cancelSnooze()
+                }
+            } footer: {
+                PhraseText("寝る準備ができたら、アラームを待たずに「監視を開始」を押してください。監視を始めると、このアラームは取り消します。")
+            }
+        } else if usesAlarm && canSnooze {
+            Section {
+                HStack(spacing: 12) {
+                    ForEach(SnoreMonitor.snoozeChoices, id: \.self) { minutes in
+                        Button {
+                            monitor.snoozeBedtimeAlarm(minutes: minutes)
+                        } label: {
+                            Label("\(minutes)分後", systemImage: "alarm")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.indigo)
+                        .controlSize(.large)
+                    }
+                }
+                .padding(.vertical, 2)
+            } header: {
+                Text("まだ寝ないとき")
+            } footer: {
+                PhraseText(isMonitoring
+                           ? "お風呂などで、まだ監視を始めたくないときに押します。監視を終えて、選んだ時間のあとにもう一度アラームで知らせます。"
+                           : "お風呂などで、まだ監視を始めたくないときに押します。選んだ時間のあとに、もう一度アラームで知らせます。")
+            }
+        }
+    }
+}
 /// 「今夜は知らせない」。始め忘れの防止を使っているときだけ出し、押した夜だけ通知・アラーム・自動で開くを休む
 /// (休む日 `skipDays` に今夜の日付を入れる。翌日からは元に戻る)
 private struct TonightSkipSection: View {
