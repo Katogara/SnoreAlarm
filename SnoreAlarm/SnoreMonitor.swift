@@ -53,13 +53,46 @@ final class SnoreMonitor {
     private(set) var watchProblems: [WatchProblem] = []
     var errorMessage: String?
 
+    /// 文はほかの言語に訳せるよう、文の切れ端をつながず、1 文ずつ丸ごと持つ
     struct WatchProblem: Hashable {
-        /// 「〜ため」に続く形の説明
-        let message: String
+        enum Kind: Hashable {
+            case notPaired
+            case notificationsDenied
+            case soundOff
+        }
+
+        let kind: Kind
+
         /// Watch に届かないことが確実 (iPhone で振動する)
-        let isBlocking: Bool
+        var isBlocking: Bool { kind != .soundOff }
         /// このアプリの通知設定で直せる
-        var fixInNotificationSettings = false
+        var fixInNotificationSettings: Bool { kind != .notPaired }
+
+        /// 問題と、そのためにどうなるか (メイン画面に出す)
+        var summary: String {
+            switch kind {
+            case .notPaired: String(localized: "Apple Watch がペアリングされていないため、Watch には届きません (iPhone で振動します)")
+            case .notificationsDenied: String(localized: "通知が許可されていないため、Watch には届きません (iPhone で振動します)")
+            case .soundOff: String(localized: "このアプリの通知のサウンドがオフになっているため、Watch が振動しないことがあります")
+            }
+        }
+
+        /// 監視の開始時のログ
+        var logMessage: String {
+            switch kind {
+            case .soundOff: String(localized: "このアプリの通知のサウンドがオフになっているため、Watch が振動しないことがあります (メイン画面の「通知の設定を開く」から直せます)")
+            default: summary
+            }
+        }
+
+        /// Watch に届かないため iPhone で振動したときのログ
+        var fallbackMessage: String {
+            switch kind {
+            case .notPaired: String(localized: "Apple Watch がペアリングされていないため、iPhone で振動しました")
+            case .notificationsDenied: String(localized: "通知が許可されていないため、iPhone で振動しました")
+            case .soundOff: String(localized: "このアプリの通知のサウンドがオフになっているため、iPhone で振動しました")
+            }
+        }
     }
 
     /// マイクを使い始める直前に呼ぶ (録音の再生を止めるため)
@@ -185,7 +218,7 @@ final class SnoreMonitor {
         append(.info, "iPhone を手に持って使っているため、いびきを数えるのを休止しています (いびきに似た音は録音します。iPhone を置いて\(Int(Self.resumeAfterStill / 60))分たつか、画面をロックして\(Int(Self.resumeAfterLock / 60))分たつと数え始めます)")
     }
 
-    private func endPause(_ message: String) {
+    private func endPause(_ message: String.LocalizationValue) {
         isPausedForScreen = false
         pausedSince = nil
         PauseStore.end()
@@ -206,7 +239,7 @@ final class SnoreMonitor {
         /// 寝る時刻のアラーム (`BedtimeAlarm`) の「監視を開始」
         case alarm
 
-        var message: String {
+        var message: String.LocalizationValue {
             switch self {
             case .manual: "監視を開始しました"
             case .reminder: "寝る時刻のお知らせから監視を開始しました"
@@ -234,7 +267,7 @@ final class SnoreMonitor {
         guard state == .idle else { return }
 
         guard await AVAudioApplication.requestRecordPermission() else {
-            errorMessage = "マイクへのアクセスが許可されていません。「設定」アプリ > プライバシーとセキュリティ > マイク から許可してください。"
+            errorMessage = String(localized: "マイクへのアクセスが許可されていません。「設定」アプリ > プライバシーとセキュリティ > マイク から許可してください。")
             return
         }
         let notificationsAllowed = await notifier.requestAuthorization()
@@ -251,7 +284,7 @@ final class SnoreMonitor {
             try configureSession()
             try startEngine()
         } catch {
-            errorMessage = "マイクを開始できませんでした: \(error.localizedDescription)"
+            errorMessage = String(localized: "マイクを開始できませんでした: \(error.localizedDescription)")
             teardown()
             return
         }
@@ -343,7 +376,7 @@ final class SnoreMonitor {
             if backgroundSince != nil {
                 stallsInBackground += 1
             }
-            append(.info, String(format: "マイクの入力が%.0f秒止まっていたため、再開します", silentFor))
+            append(.info, "マイクの入力が\(Int(silentFor.rounded()))秒止まっていたため、再開します")
         }
         restartAudio(reason: "入力の停止", quietly: true)
     }
@@ -367,12 +400,13 @@ final class SnoreMonitor {
             }
             return
         }
-        append(.info, (device == .both ? "Apple Watch と iPhone の両方で知らせます。" : "Apple Watch で知らせます。")
-               + "iPhone の画面をロック (自動ロックで可) し、Watch を着けたままにしてください")
+        if device == .both {
+            append(.info, "Apple Watch と iPhone の両方で知らせます。iPhone の画面をロック (自動ロックで可) し、Watch を着けたままにしてください")
+        } else {
+            append(.info, "Apple Watch で知らせます。iPhone の画面をロック (自動ロックで可) し、Watch を着けたままにしてください")
+        }
         for problem in watchProblems {
-            append(.info, problem.isBlocking
-                   ? "\(problem.message)ため、Watch には届きません (iPhone で振動します)"
-                   : "\(problem.message)ため、Watch が振動しないことがあります (メイン画面の「通知の設定を開く」から直せます)")
+            appendText(.info, problem.logMessage)
         }
     }
 
@@ -385,7 +419,7 @@ final class SnoreMonitor {
         finishMonitoring("監視を終了しました")
     }
 
-    private func finishMonitoring(_ message: String) {
+    private func finishMonitoring(_ message: String.LocalizationValue) {
         append(.info, message)
         MonitoringSessionStore.end()
         teardown()
@@ -452,7 +486,7 @@ final class SnoreMonitor {
         if isDemo {
             finishDemo("デモを終了しました")
         }
-        let message = "\(date.formatted(date: .omitted, time: .shortened)) にもう一度アラームで知らせます"
+        let message: String.LocalizationValue = "\(date.formatted(date: .omitted, time: .shortened)) にもう一度アラームで知らせます"
         if state != .idle {
             // 監視を終えてから予約する (監視中のままだと、予約したアラームを消してしまうため)
             append(.info, "監視を終了しました")
@@ -585,7 +619,7 @@ final class SnoreMonitor {
                     switch event {
                     case .snore(let snore):
                         self.snoreCount += 1
-                        self.append(.snore, String(format: "[デモ] いびきを検知 (%.1f秒, %.0f dB)", snore.duration, snore.peakDB))
+                        self.append(.snore, "[デモ] いびきを検知 (\(Self.seconds(snore.duration))秒, \(Self.decibels(snore.peakDB)) dB)")
                     case .noise:
                         break
                     case .alarm(let count):
@@ -601,7 +635,7 @@ final class SnoreMonitor {
         }
     }
 
-    private func finishDemo(_ message: String) {
+    private func finishDemo(_ message: String.LocalizationValue) {
         demoTask?.cancel()
         demoTask = nil
         if watchTask != nil {
@@ -707,7 +741,7 @@ final class SnoreMonitor {
         let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             throw NSError(domain: "SnoreAlarm", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "マイク入力が見つかりません"])
+                          userInfo: [NSLocalizedDescriptionKey: String(localized: "マイク入力が見つかりません")])
         }
 
         let processor = AudioProcessor(sampleRate: format.sampleRate, config: settings.detectorConfig) { [weak self] output in
@@ -741,7 +775,8 @@ final class SnoreMonitor {
     }
 
     /// - Parameter quietly: 入力の停止から定期的に再開を試みる場合。失敗の知らせは 1 回だけにする
-    private func restartAudio(reason: String, quietly: Bool = false) {
+    private func restartAudio(reason: String.LocalizationValue, quietly: Bool = false) {
+        let reason = String(localized: reason)
         // デモはマイクを使わない
         guard state != .idle, !isDemo else { return }
         stopEngine()
@@ -754,11 +789,11 @@ final class SnoreMonitor {
         } catch {
             // 失敗しても監視中のままにし、runHealthCheck で再開を試み続ける
             if quietly && errorMessage != nil { return }
-            errorMessage = "マイクを再開できませんでした: \(error.localizedDescription)"
+            errorMessage = String(localized: "マイクを再開できませんでした: \(error.localizedDescription)")
             append(.info, "マイクの再開に失敗しました (\(reason))。再開を試み続けます")
             if isInBackground {
-                notifier.notify(title: "いびきの監視が止まっています",
-                                body: "マイクを再開できませんでした。アプリを開くと再開を試みます。")
+                notifier.notify(title: String(localized: "いびきの監視が止まっています"),
+                                body: String(localized: "マイクを再開できませんでした。アプリを開くと再開を試みます。"))
             }
         }
     }
@@ -780,16 +815,17 @@ final class SnoreMonitor {
         if let since = backgroundSince {
             let seconds = Int(Date().timeIntervalSince(since))
             if seconds >= 20 {
-                let span = seconds >= 60 ? "\(seconds / 60)分" : "\(seconds)秒"
+                let span = seconds >= 60 ? String(localized: "\(seconds / 60)分") : String(localized: "\(seconds)秒")
                 // アプリごと止められていた場合は stallsInBackground を数えられないため、入力の間隔でも確かめる
                 let gap = processor?.longestInputGap ?? 0
                 let input: String
                 if stallsInBackground > 0 {
-                    input = "マイク入力が\(stallsInBackground)回止まりました"
+                    input = String(localized: "マイク入力が\(stallsInBackground)回止まりました")
                 } else if gap >= Self.inputStallSeconds {
-                    input = gap >= 60 ? "マイク入力が最長\(Int(gap / 60))分途切れました" : String(format: "マイク入力が最長%.0f秒途切れました", gap)
+                    input = gap >= 60 ? String(localized: "マイク入力が最長\(Int(gap / 60))分途切れました")
+                        : String(localized: "マイク入力が最長\(Int(gap.rounded()))秒途切れました")
                 } else {
-                    input = "マイク入力は正常"
+                    input = String(localized: "マイク入力は正常")
                 }
                 append(.info, "画面をロック中・ほかのアプリを使用中だった\(span)間: いびき\(snoreCount - snoreCountAtBackground)回を検知 (\(input))")
             }
@@ -890,17 +926,15 @@ final class SnoreMonitor {
             case .snore(let snore) where isPausedForScreen:
                 // 休止中は数えず、いびきを見逃していないかを朝に確かめられるよう録音だけする
                 pausedSoundCount += 1
-                let logID = append(.noise, String(format: "休止中に、いびきに似た音を検知 (数えずに録音します。%.1f秒, %.0f dB)",
-                                                  snore.duration, snore.peakDB))
+                let logID = append(.noise, "休止中に、いびきに似た音を検知 (数えずに録音します。\(Self.seconds(snore.duration))秒, \(Self.decibels(snore.peakDB)) dB)")
                 saveRecording(of: snore, kind: .paused, logID: logID)
             case .snore(let snore):
                 snoreCount += 1
-                let logID = append(.snore, String(format: "いびきを検知 (%.1f秒, %.0f dB)", snore.duration, snore.peakDB))
+                let logID = append(.snore, "いびきを検知 (\(Self.seconds(snore.duration))秒, \(Self.decibels(snore.peakDB)) dB)")
                 saveRecording(of: snore, logID: logID)
             case .noise(let noise):
                 noiseCount += 1
-                let logID = append(.noise, String(format: "物音を検知 (途切れ途切れの音のため、いびきに数えません。%.1f秒, %.0f dB)",
-                                                  noise.duration, noise.peakDB))
+                let logID = append(.noise, "物音を検知 (途切れ途切れの音のため、いびきに数えません。\(Self.seconds(noise.duration))秒, \(Self.decibels(noise.peakDB)) dB)")
                 saveRecording(of: noise, kind: .noise, logID: logID)
             case .alarm(let count):
                 guard state == .monitoring, !isPausedForScreen else { continue }
@@ -916,21 +950,34 @@ final class SnoreMonitor {
         // 振動音をマイクが拾っていびきと誤検知しないよう、振動中は検出を止める
         processor?.setSuppressed(true)
         let duration = TimeInterval(settings.vibrationSeconds)
-        let title = isDemo ? "[デモ] いびきを検知しました" : "いびきを検知しました"
-        let detected = "\(settings.windowSeconds)秒以内に\(count)回のいびきを検知しました。"
+        let title = isDemo ? String(localized: "[デモ] いびきを検知しました") : String(localized: "いびきを検知しました")
+        let window = settings.windowSeconds
+        let vibration = settings.vibrationSeconds
+        let vibrateBody = String(localized: "\(window)秒以内に\(count)回のいびきを検知しました。\(vibration)秒間振動します。")
         // 知らせる端末は監視中に切り替えても次のアラームから反映する
         let device = AlarmSettings.load().alertDevice
         if device.usesWatch {
-            alertWithWatch(duration: duration, title: title, body: detected + "寝返りを打ってください。",
-                           iPhoneBody: detected + "\(settings.vibrationSeconds)秒間振動します。",
+            alertWithWatch(duration: duration, title: title,
+                           body: String(localized: "\(window)秒以内に\(count)回のいびきを検知しました。寝返りを打ってください。"),
+                           iPhoneBody: vibrateBody,
                            alsoIPhone: device == .both)
             return
         }
         recordAlarm(.iPhone)
         vibrateIPhone(duration: duration)
         if isInBackground {
-            notifier.notify(title: title, body: detected + "\(settings.vibrationSeconds)秒間振動します。", stoppable: true)
+            notifier.notify(title: title, body: vibrateBody, stoppable: true)
         }
+    }
+
+    /// ログに出す秒数 (小数 1 桁) と音量
+    private static func seconds(_ value: Double) -> String { String(format: "%.1f", value) }
+    private static func decibels(_ value: Float) -> String { String(format: "%.0f", value) }
+
+    /// デモのときはログの頭に「[デモ]」を付ける
+    private func appendAlert(_ message: String.LocalizationValue) {
+        let text = String(localized: message)
+        appendText(.info, isDemo ? String(localized: "[デモ] ") + text : text)
     }
 
     private func vibrateIPhone(duration: TimeInterval) {
@@ -945,15 +992,17 @@ final class SnoreMonitor {
     ///   - alsoIPhone: iPhone も同時に振動させる (両方で知らせる設定)。どちらの通知や画面で止めても両方止まる
     private func alertWithWatch(duration: TimeInterval, title: String, body: String, iPhoneBody: String,
                                 alsoIPhone: Bool = false) {
-        let prefix = isDemo ? "[デモ] " : ""
         let usingOtherApp = isUsingOtherApp
         if !isInBackground || usingOtherApp {
             // iPhone の画面が点いているあいだは、通知が Watch に転送されない
             if !alsoIPhone {
                 iPhoneFallbackCount += 1
             }
-            let reason = usingOtherApp ? "ほかのアプリを使用中" : "画面を表示中"
-            append(.info, prefix + "\(reason)のため iPhone で振動しました (Watch に届くのは iPhone の画面がロックされているときだけです)")
+            if usingOtherApp {
+                appendAlert("ほかのアプリを使用中のため iPhone で振動しました (Watch に届くのは iPhone の画面がロックされているときだけです)")
+            } else {
+                appendAlert("画面を表示中のため iPhone で振動しました (Watch に届くのは iPhone の画面がロックされているときだけです)")
+            }
             recordAlarm(.iPhone)
             vibrateIPhone(duration: duration)
             if usingOtherApp {
@@ -965,7 +1014,7 @@ final class SnoreMonitor {
             if !alsoIPhone {
                 iPhoneFallbackCount += 1
             }
-            append(.info, prefix + "\(issue.message)ため、iPhone で振動しました")
+            appendText(.info, isDemo ? String(localized: "[デモ] ") + issue.fallbackMessage : issue.fallbackMessage)
             recordAlarm(.iPhone)
             vibrateIPhone(duration: duration)
             return
@@ -973,12 +1022,12 @@ final class SnoreMonitor {
 
         let now = Date()
         if alsoIPhone {
-            append(.info, prefix + "iPhone を振動させました")
+            appendAlert("iPhone を振動させました")
             recordAlarm(.both)
             vibrator.start(duration: duration)
         } else if settings.watchFallback && WatchAlert.needsFallback(lastWatchAlarm: lastWatchAlarmAt, now: now) {
             iPhoneFallbackCount += 1
-            append(.info, prefix + "Watch で知らせたあともいびきが続いたため、iPhone も振動させました")
+            appendAlert("Watch で知らせたあともいびきが続いたため、iPhone も振動させました")
             recordAlarm(.both)
             vibrator.start(duration: duration)
         } else {
@@ -988,7 +1037,7 @@ final class SnoreMonitor {
         watchAlertCount += 1
         watchAlarmSerial += 1
         let alarm = watchAlarmSerial
-        append(.info, prefix + "Apple Watch に通知を送りました")
+        appendAlert("Apple Watch に通知を送りました")
         watchTask?.cancel()
         watchTask = Task { [weak self] in
             let start = Date()
@@ -1044,15 +1093,13 @@ final class SnoreMonitor {
         let readiness = await AlarmNotifier.readiness()
         var problems: [WatchProblem] = []
         if paired == false {
-            problems.append(WatchProblem(message: "Apple Watch がペアリングされていない", isBlocking: true))
+            problems.append(WatchProblem(kind: .notPaired))
         }
         if !readiness.authorized {
-            problems.append(WatchProblem(message: "通知が許可されていない", isBlocking: true,
-                                         fixInNotificationSettings: true))
+            problems.append(WatchProblem(kind: .notificationsDenied))
         } else if !readiness.soundEnabled {
             // サウンドなしの通知では Watch が振動しないことがある
-            problems.append(WatchProblem(message: "このアプリの通知のサウンドがオフになっている", isBlocking: false,
-                                         fixInNotificationSettings: true))
+            problems.append(WatchProblem(kind: .soundOff))
         }
         watchProblems = problems
     }
@@ -1097,8 +1144,15 @@ final class SnoreMonitor {
         }
     }
 
+    /// ログに足す。文は画面の言語に訳す
     @discardableResult
-    private func append(_ kind: LogEntry.Kind, _ message: String) -> UUID {
+    private func append(_ kind: LogEntry.Kind, _ message: String.LocalizationValue) -> UUID {
+        appendText(kind, String(localized: message))
+    }
+
+    /// 訳し終えた文をログに足す
+    @discardableResult
+    private func appendText(_ kind: LogEntry.Kind, _ message: String) -> UUID {
         let entry = LogEntry(kind: kind, message: message)
         DiagnosticLog.write("log[\(kind)]: \(message)")
         log.insert(entry, at: 0)

@@ -17,7 +17,7 @@ enum AlertDevice: String, CaseIterable, Identifiable {
         switch self {
         case .iPhone: "iPhone"
         case .watch: "Apple Watch"
-        case .both: "iPhone と Apple Watch の両方"
+        case .both: String(localized: "iPhone と Apple Watch の両方")
         }
     }
 

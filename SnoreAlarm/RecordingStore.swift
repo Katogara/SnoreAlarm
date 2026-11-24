@@ -21,8 +21,8 @@ enum RecordingStore {
         var kindLabel: String {
             switch kind {
             case .snore: ""
-            case .noise: "物音 (いびきに数えていません)・"
-            case .paused: "休止中 (いびきに数えていません)・"
+            case .noise: String(localized: "物音 (いびきに数えていません)・")
+            case .paused: String(localized: "休止中 (いびきに数えていません)・")
             }
         }
     }

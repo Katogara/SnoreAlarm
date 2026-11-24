@@ -119,7 +119,7 @@ struct SubscriptionSection: View {
 
     var body: some View {
         Section {
-            LabeledContent("状態", value: subscription.isSubscribed ? "登録中" : "未登録")
+            LabeledContent("状態", value: subscription.isSubscribed ? String(localized: "登録中") : String(localized: "未登録"))
             if subscription.isSubscribed {
                 Button("登録内容の確認・解約") { showingManage = true }
             } else {

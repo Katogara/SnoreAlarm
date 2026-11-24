@@ -7,9 +7,9 @@ enum Sensitivity: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .high: "高 (小さないびきも検知)"
-        case .medium: "中"
-        case .low: "低 (大きないびきのみ)"
+        case .high: String(localized: "高 (小さないびきも検知)")
+        case .medium: String(localized: "中")
+        case .low: String(localized: "低 (大きないびきのみ)")
         }
     }
 
@@ -73,8 +73,8 @@ struct AlarmSettings {
 
         var label: String {
             switch self {
-            case .days: "日付で選ぶ"
-            case .weekdays: "曜日で選ぶ"
+            case .days: String(localized: "日付で選ぶ")
+            case .weekdays: String(localized: "曜日で選ぶ")
             }
         }
     }

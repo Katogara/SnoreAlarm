@@ -29,9 +29,9 @@ final class AlarmNotifier: NSObject, UNUserNotificationCenterDelegate {
 
     override init() {
         super.init()
-        let stop = UNNotificationAction(identifier: NotificationID.stopAction, title: "振動を止める", options: [])
+        let stop = UNNotificationAction(identifier: NotificationID.stopAction, title: String(localized: "振動を止める"), options: [])
         // マイクは画面に出ているときしか使い始められないため、アプリを開いてから監視を始める
-        let start = UNNotificationAction(identifier: NotificationID.startAction, title: "監視を開始", options: [.foreground])
+        let start = UNNotificationAction(identifier: NotificationID.startAction, title: String(localized: "監視を開始"), options: [.foreground])
         center.setNotificationCategories([
             // 通知を払いのけた (閉じた) ときも知らせてもらい、振動を止める
             UNNotificationCategory(identifier: NotificationID.category, actions: [stop], intentIdentifiers: [],
@@ -88,8 +88,8 @@ final class AlarmNotifier: NSObject, UNUserNotificationCenterDelegate {
     /// Watch に届くかを寝る前に試すための通知 (すぐに出す。待つ時間は呼び出し側でとる)
     func notifyWatchTest() {
         let content = UNMutableNotificationContent()
-        content.title = "Apple Watch のテスト"
-        content.body = Phrases.wrapped("手首が振動すれば、いびきのときも Watch で知らせられます。")
+        content.title = String(localized: "Apple Watch のテスト")
+        content.body = Phrases.wrapped(String(localized: "手首が振動すれば、いびきのときも Watch で知らせられます。"))
         content.sound = .default
         center.add(UNNotificationRequest(identifier: "watchTest", content: content, trigger: nil))
     }
@@ -120,8 +120,8 @@ final class AlarmNotifier: NSObject, UNUserNotificationCenterDelegate {
                                                  + NotificationID.legacyReminders)
         for (index, date) in dates.prefix(NotificationID.maxReminders).enumerated() {
             let content = UNMutableNotificationContent()
-            content.title = "いびきの監視を始めましょう"
-            content.body = Phrases.wrapped("寝る時刻になりました。「監視を開始」を押すか、この通知をタップすると監視を始めます。")
+            content.title = String(localized: "いびきの監視を始めましょう")
+            content.body = Phrases.wrapped(String(localized: "寝る時刻になりました。「監視を開始」を押すか、この通知をタップすると監視を始めます。"))
             content.sound = .default
             content.categoryIdentifier = NotificationID.reminderCategory
             let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
@@ -136,8 +136,8 @@ final class AlarmNotifier: NSObject, UNUserNotificationCenterDelegate {
         center.removePendingNotificationRequests(withIdentifiers: (0..<NotificationID.maxMissedNights).map(NotificationID.missedNight))
         for (index, date) in dates.prefix(NotificationID.maxMissedNights).enumerated() {
             let content = UNMutableNotificationContent()
-            content.title = "昨夜は監視していませんでした"
-            content.body = Phrases.wrapped("夜のあいだに監視が始まりませんでした。夜の時間帯に一度も iPhone を触らなかった夜は、ショートカットでも自動で始められません。")
+            content.title = String(localized: "昨夜は監視していませんでした")
+            content.body = Phrases.wrapped(String(localized: "夜のあいだに監視が始まりませんでした。夜の時間帯に一度も iPhone を触らなかった夜は、ショートカットでも自動で始められません。"))
             content.sound = nil
             let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: date)
             center.add(UNNotificationRequest(identifier: NotificationID.missedNight(index), content: content,
