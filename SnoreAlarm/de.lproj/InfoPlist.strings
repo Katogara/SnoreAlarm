@@ -1,0 +1,5 @@
+/* de の Info.plist の訳。scripts/build_strings.py で作る */
+
+"CFBundleDisplayName" = "Schnarchalarm";
+"NSMicrophoneUsageDescription" = "Das Mikrofon erkennt Schnarchen im Schlaf. Nur die wenigen als Schnarchen erkannten Sekunden werden auf dem Gerät aufgenommen (in den Einstellungen abschaltbar) und nach 1 Woche automatisch gelöscht. Nichts verlässt das Gerät.";
+"NSAlarmKitUsageDescription" = "Damit zur Schlafenszeit ein Wecker wie in der Uhr-App klingelt, wenn die Überwachung noch nicht läuft.";
