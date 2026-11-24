@@ -153,7 +153,6 @@
 "アプリ" = "App";
 "アプリを自動で開く" = "Abrir o app automaticamente";
 "アプリを自動で開く設定" = "Abrir o app automaticamente";
-"アラーム" = "Alarme";
 "アラームから監視を開始" = "Iniciar monitoramento pelo alarme";
 "アラームが許可されていないため、代わりに通知で知らせます。「設定」アプリでいびきアラームを開き、アラームを許可してください。" = "Os alarmes não estão permitidos, então você receberá uma notificação no lugar. Abra o Alarme de Ronco no app Ajustes e permita os alarmes.";
 "アラームが鳴ります" = "Alarme ativado";
@@ -291,7 +290,6 @@
 "振動の長さ %lld 秒" = "Duração da vibração: %1$lld s";
 "振動をテスト" = "Testar vibração";
 "振動を止める" = "Parar vibração";
-"振動アラーム" = "Avisos por vibração";
 "振動中" = "Vibrando";
 "日付で選ぶ" = "Por data";
 "日付は、お知らせの時刻が来る日で選んでください。" = "Escolha as datas pelo dia em que cai o horário do lembrete.";
