@@ -8,6 +8,13 @@
 	<array>
 		<string>en</string>
 		<string>ja</string>
+		<string>de</string>
+		<string>es</string>
+		<string>fr</string>
+		<string>ko</string>
+		<string>pt-BR</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
 	</array>
 	<key>CFBundleDisplayName</key>
 	<string>いびきアラーム</string>
