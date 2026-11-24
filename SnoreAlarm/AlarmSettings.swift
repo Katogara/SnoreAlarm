@@ -58,6 +58,8 @@ struct AlarmSettings {
         static let skipMode = "skipMode"
         /// 「あとでもう一度鳴らす」アラームの時刻 (1970 年からの秒)。監視を始めると消す
         static let snoozeAlarmAt = "snoozeAlarmAt"
+        /// サブスクリプションに登録中か (`SubscriptionStore`。起動直後や裏で監視を始めるときに使う、最後に確かめた結果)
+        static let subscriptionActive = "subscriptionActive"
     }
 
     /// 始め忘れの防止の休み方

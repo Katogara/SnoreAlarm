@@ -220,6 +220,19 @@ final class SnoreMonitor {
         guard state == .idle else { return }
         errorMessage = nil
 
+        // サブスクリプションに登録していなければ、監視せずに登録の画面を出す
+        // (寝る時刻のアラームなどから裏で呼ばれたときは、次にアプリを開いたときに出る)
+        let subscription = SubscriptionStore.shared
+        if SubscriptionStore.isRequired {
+            await subscription.refresh()
+        }
+        guard subscription.canMonitor else {
+            DiagnosticLog.write("start blocked: not subscribed (\(source))")
+            subscription.isPaywallPresented = true
+            return
+        }
+        guard state == .idle else { return }
+
         guard await AVAudioApplication.requestRecordPermission() else {
             errorMessage = "マイクへのアクセスが許可されていません。「設定」アプリ > プライバシーとセキュリティ > マイク から許可してください。"
             return
@@ -485,6 +498,13 @@ final class SnoreMonitor {
     /// 寝る時刻のお知らせ (またはアラーム) と、「昨夜は監視していませんでした」の知らせを予約し直す。
     /// 監視中はその夜の残りのお知らせを出さず、監視した夜の翌朝の知らせも出さない。休む夜はどれも出さない。
     private func updateReminders() {
+        // サブスクリプションに登録していなければ監視を始められないため、お知らせもアラームも予約しない
+        guard SubscriptionStore.shared.canMonitor else {
+            notifier.scheduleReminders(at: [])
+            BedtimeAlarm.reschedule(at: [])
+            notifier.scheduleMissedNightNotices(at: [])
+            return
+        }
         let isMonitoring = state != .idle && !isDemo
         let monitoringUntil = isMonitoring ? scheduledEnd : nil
         // 「アラームで知らせる」は、アラームの許可があれば通知の代わりにアラームを鳴らす (許可がなければ通知で知らせる)
