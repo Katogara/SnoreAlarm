@@ -1,0 +1,4 @@
+/* zh-Hans の AppShortcuts の訳。scripts/build_strings.py で作る (手で直さず scripts/translations/zh-Hans.json を直す) */
+
+"${applicationName}で監視が必要か調べる" = "用${applicationName}检查是否需要监测";
+"${applicationName}で監視を開始" = "用${applicationName}开始监测";
