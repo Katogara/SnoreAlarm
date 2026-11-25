@@ -2,13 +2,15 @@ import SwiftUI
 
 /// 知らせる端末を、楕円の軌道を回る 3D のカルーセルで選ぶ。
 /// 手前に来た端末が選んでいる端末で、大きく色付きで出す。奥の端末は小さく薄くぼかし、軌道に沿って傾けて出す。
-/// 左右に 1 回なぞると隣の端末へ 1 つだけ回り、止まる位置を少し行き過ぎてから引き戻される。奥の端末を押すと、その端末が手前に回ってくる
+/// 左右に 1 回なぞると隣の端末へ 1 つだけ回り、すばやくなぞったときだけ止まる位置をわずかに行き過ぎてから引き戻される。奥の端末を押すと、その端末が手前に回ってくる
 struct AlertDeviceCarousel: View {
     @Binding var selection: AlertDevice
     /// 回転の位置 (端末 1 つ分が 1)。整数 n のとき、n 番目 (端末の数で割った余り) の端末が手前に来る
     @State private var rotation: Double
     /// なぞり始めたときの `rotation`。縦になぞったとき (リストのスクロール) は nil のまま
     @State private var dragStart: Double?
+    /// なぞり終えた時刻。指を離したときに、指の下に来た端末のボタンが押されたことにならないようにする
+    @State private var dragEndedAt = Date.distantPast
 
     private static let devices = AlertDevice.allCases
     private static let height: CGFloat = 150
@@ -41,6 +43,8 @@ struct AlertDeviceCarousel: View {
 
                     ForEach(Array(Self.devices.enumerated()), id: \.element) { index, device in
                         Button {
+                            // なぞったあと指を離しただけのときは、押したことにしない
+                            guard dragStart == nil, Date().timeIntervalSince(dragEndedAt) > 0.35 else { return }
                             settle(at: nearestRotation(to: index))
                         } label: {
                             OrbitItem(device: device, index: index, count: Self.devices.count,
@@ -68,6 +72,7 @@ struct AlertDeviceCarousel: View {
                         .onEnded { value in
                             guard let start = dragStart else { return }
                             dragStart = nil
+                            dragEndedAt = Date()
                             // 1 回なぞると、勢いにかかわらず隣の端末へ 1 つだけ進む。少しだけなら元に戻す
                             let moved = -value.predictedEndTranslation.width / step
                             let direction: Double = moved > 0.3 ? 1 : (moved < -0.3 ? -1 : 0)
@@ -137,14 +142,17 @@ struct AlertDeviceCarousel: View {
         return (1 + (size - 1) * 0.25) * (moved < 0 ? -1 : 1)
     }
 
-    /// 指を離したあとの動き。なぞった向きの勢いを残して止まる位置を少し行き過ぎ、ばねで引き戻す
+    /// 指を離したあとの動き。ゆっくり離したときは行き過ぎずにそのまま止める。
+    /// すばやくなぞったときだけ、勢いを残して止まる位置をわずかに行き過ぎ、ばねで引き戻す
     private func overshoot(toward target: Double, direction: Double, speed: Double) -> Animation {
         let remaining = (target - rotation) * direction
-        guard direction != 0, remaining > 0.02 else { return Self.spring }
-        // 速さ (端末いくつ分 / 秒) は、行き過ぎが少しで済むよう 1.5〜4 に収める。
+        let settleOnly = Animation.interpolatingSpring(duration: 0.4, bounce: 0)
+        // 速さは端末いくつ分 / 秒。ゆっくりのときや、もう止まる位置に来ているときは行き過ぎさせない
+        guard direction != 0, remaining > 0.05, speed > 1.2 else { return settleOnly }
+        // 行き過ぎが端末 1 つ分の 1 割に満たない程度で済むよう、勢いを抑える。
         // initialVelocity は残りの距離に対する割合で渡す
-        let velocity = min(max(speed, 1.5), 4)
-        return .interpolatingSpring(duration: 0.55, bounce: 0.4, initialVelocity: min(velocity / remaining, 15))
+        let velocity = min(speed, 1.5)
+        return .interpolatingSpring(duration: 0.45, bounce: 0.15, initialVelocity: min(velocity / remaining, 6))
     }
 
     /// 回転の位置を `target` まで回して止め、手前に来た端末を選ぶ
