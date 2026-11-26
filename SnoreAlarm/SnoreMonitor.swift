@@ -1114,6 +1114,8 @@ final class SnoreMonitor {
     nonisolated static let watchTestDelay: TimeInterval = 5
     /// Apple Watch のデモで、「開始」を押してから画面をロックするまでのおおよその秒数 (案内に出す秒数の見積もりに使う)
     nonisolated static let demoLockDelay: TimeInterval = 3
+    /// 通知を出してから Watch が振動し始めるまでのおおよその秒数 (デモの実機で約 5 秒。2026-11-26)
+    nonisolated static let demoWatchArrival: TimeInterval = 5
     /// Apple Watch のデモで、画面のロックを待つ長さ。過ぎたら、ロックしていなくてもいびきを始める
     nonisolated static let demoLockTimeout: TimeInterval = 20
     /// OK を押してから Watch が振動するまでのおおよその秒数 (通知を出してから Watch に届くまでにも数秒かかる。実機で 8〜10 秒)
