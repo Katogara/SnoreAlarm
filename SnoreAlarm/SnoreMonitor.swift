@@ -236,7 +236,7 @@ final class SnoreMonitor {
         case reminder
         /// ショートカットのオートメーション (`StartMonitoringIntent`)
         case automation
-        /// 寝る時刻のアラーム (`BedtimeAlarm`) の「監視を開始」
+        /// おやすみコール (`BedtimeAlarm`) の「監視を開始」
         case alarm
 
         var message: String.LocalizationValue {
@@ -244,7 +244,7 @@ final class SnoreMonitor {
             case .manual: "監視を開始しました"
             case .reminder: "寝る時刻のお知らせから監視を開始しました"
             case .automation: "ショートカットのオートメーションから監視を開始しました"
-            case .alarm: "寝る時刻のアラームから監視を開始しました"
+            case .alarm: "おやすみコールから監視を開始しました"
             }
         }
     }
@@ -254,7 +254,7 @@ final class SnoreMonitor {
         errorMessage = nil
 
         // サブスクリプションに登録していなければ、監視せずに登録の画面を出す
-        // (寝る時刻のアラームなどから裏で呼ばれたときは、次にアプリを開いたときに出る)
+        // (おやすみコールなどから裏で呼ばれたときは、次にアプリを開いたときに出る)
         let subscription = SubscriptionStore.shared
         if SubscriptionStore.isRequired {
             await subscription.refresh()
@@ -462,7 +462,7 @@ final class SnoreMonitor {
     /// 「あとでもう一度鳴らす」で選べる時間 (分)
     static let snoozeChoices = [15, 30]
 
-    /// あとでもう一度鳴らす寝る時刻のアラームの時刻。監視を始めると消す
+    /// あとでもう一度鳴らすおやすみコールの時刻。監視を始めると消す
     private(set) var snoozeAlarmAt: Date? = SnoreMonitor.savedSnooze()
 
     nonisolated private static func savedSnooze() -> Date? {
@@ -480,7 +480,7 @@ final class SnoreMonitor {
     }
 
     /// お風呂などで、まだ監視を始めたくないとき。監視を始めずに (監視中なら終えて)、`minutes` 分後にもう一度
-    /// 寝る時刻のアラームで知らせる
+    /// おやすみコールで知らせる
     func snoozeBedtimeAlarm(minutes: Int) {
         let date = Date().addingTimeInterval(TimeInterval(minutes * 60))
         if isDemo {
@@ -600,14 +600,25 @@ final class SnoreMonitor {
         }
 
         // Watch で知らせる設定なら Watch に通知する。Watch に届くのは iPhone の画面がロックされているときだけなので、
-        // いびきが始まるまでを長くして、画面をロックする時間をとる
-        let leadIn = DemoSignal.leadIn + (settings.alertDevice.usesWatch ? Self.watchTestDelay : 0)
-        if settings.alertDevice.usesWatch {
+        // 画面がロックされたと分かってから、いびきを始める
+        let usesWatch = settings.alertDevice.usesWatch
+        if usesWatch {
             append(.info, "Apple Watch で知らせるデモです。すぐに iPhone の画面をロックしてください (画面が点いていると iPhone で振動します)")
         }
-        let frames = DemoSignal.frames(for: settings, leadIn: leadIn)
+        let frames = DemoSignal.frames(for: settings)
         let config = settings.detectorConfig
         demoTask = Task { [weak self] in
+            if usesWatch {
+                // パスコードを設定していると、ロックしてから 10 秒ほどは「ほかのアプリを使用中」と見分けがつかず
+                // (`isUsingOtherApp`)、その間に振動の条件に達すると Watch ではなく iPhone で知らせてしまう。
+                // ロック中と分かるまで待つ。ロックしないまま `demoLockTimeout` 秒たったら、そのまま始める
+                let deadline = Date().addingTimeInterval(Self.demoLockTimeout)
+                while Date() < deadline {
+                    guard !Task.isCancelled, let self, self.isDemo else { return }
+                    if self.isInBackground && !self.isUsingOtherApp { break }
+                    try? await Task.sleep(for: .milliseconds(500))
+                }
+            }
             var detector = SnoreDetector(config: config)
             for frame in frames {
                 try? await Task.sleep(for: .seconds(frame.duration))
@@ -1055,6 +1066,10 @@ final class SnoreMonitor {
 
     /// 「Watch に届くかテスト」で OK を押してから通知を出すまでの秒数 (その間に iPhone をロックしてもらう)
     nonisolated static let watchTestDelay: TimeInterval = 5
+    /// Apple Watch のデモで、画面をロックしてから iPhone がロック中と分かるまでのおおよその秒数 (パスコードを設定しているとき)
+    nonisolated static let demoLockDelay: TimeInterval = 10
+    /// Apple Watch のデモで、画面のロックを待つ長さ。過ぎたら、ロックしていなくてもいびきを始める
+    nonisolated static let demoLockTimeout: TimeInterval = 20
     /// OK を押してから Watch が振動するまでのおおよその秒数 (通知を出してから Watch に届くまでにも数秒かかる。実機で 8〜10 秒)
     nonisolated static let watchTestArrival: TimeInterval = 10
 

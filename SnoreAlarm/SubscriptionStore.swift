@@ -4,7 +4,7 @@ import SwiftUI
 
 /// 月額のサブスクリプション (App Store の自動更新サブスクリプション)。
 /// 無料の体験期間は App Store Connect の「お試しオファー」で設定し、Apple が 1 つの Apple ID につき 1 回だけ適用する。
-/// 登録していないときは、いびきの監視 (寝る時刻のアラームを含む) だけを止め、記録・録音・グラフ・デモは使えるままにする。
+/// 登録していないときは、いびきの監視 (おやすみコールを含む) だけを止め、記録・録音・グラフ・デモは使えるままにする。
 @MainActor
 @Observable
 final class SubscriptionStore {
@@ -62,7 +62,7 @@ final class SubscriptionStore {
         isSubscribed = active
         UserDefaults.standard.set(active, forKey: AlarmSettings.Key.subscriptionActive)
         DiagnosticLog.write("subscription: active=\(active)")
-        // 寝る時刻のアラームは、登録しているときだけ予約する
+        // おやすみコールは、登録しているときだけ予約する
         SnoreMonitor.shared.applySchedule()
     }
 }
@@ -81,7 +81,7 @@ struct PaywallView: View {
                     .padding(.top, 24)
                 Text("いびきの監視を使うには")
                     .font(.title2.bold())
-                PhraseText("いびきの監視と寝る時刻のアラームは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。")
+                PhraseText("いびきの監視とおやすみコールは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。")
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
             }
