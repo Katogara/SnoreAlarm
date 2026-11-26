@@ -2,16 +2,17 @@ import Observation
 import StoreKit
 import SwiftUI
 
-/// 月額のサブスクリプション (App Store の自動更新サブスクリプション)。
-/// 無料の体験期間は App Store Connect の「お試しオファー」で設定し、Apple が 1 つの Apple ID につき 1 回だけ適用する。
+/// サブスクリプション (App Store の自動更新サブスクリプション)。月額と年額の 2 つを、App Store Connect の同じグループに置く。
+/// 同じグループなので、どちらか 1 つだけに加入でき、乗り換えは Apple が日割りなどを扱う。
+/// 無料の体験期間は App Store Connect の「お試しオファー」で設定し、Apple がグループごとに 1 つの Apple ID につき 1 回だけ適用する。
 /// 登録していないときは、いびきの監視 (おやすみコールを含む) だけを止め、記録・録音・グラフ・デモは使えるままにする。
 @MainActor
 @Observable
 final class SubscriptionStore {
     static let shared = SubscriptionStore()
 
-    /// App Store Connect で作るサブスクリプションの製品 ID
-    static let productID = "snorealarm.monthly"
+    /// App Store Connect で作るサブスクリプションの製品 ID (月額・年額)。登録画面にはこの順に並ぶ
+    static let productIDs = ["snorealarm.monthly", "snorealarm.yearly"]
 
     /// 登録していないと監視できないようにするか。
     /// 署名なしで入れる開発中のビルドでは App Store から製品を読めず登録できないため、止めない。
@@ -53,7 +54,7 @@ final class SubscriptionStore {
         var active = false
         for await result in StoreKit.Transaction.currentEntitlements {
             guard case .verified(let transaction) = result,
-                  transaction.productID == Self.productID,
+                  Self.productIDs.contains(transaction.productID),
                   transaction.revocationDate == nil else { continue }
             if let expiration = transaction.expirationDate, expiration < Date() { continue }
             active = true
@@ -73,7 +74,7 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        SubscriptionStoreView(productIDs: [SubscriptionStore.productID]) {
+        SubscriptionStoreView(productIDs: SubscriptionStore.productIDs) {
             VStack(spacing: 16) {
                 Image(systemName: "bed.double.fill")
                     .font(.system(size: 56))
