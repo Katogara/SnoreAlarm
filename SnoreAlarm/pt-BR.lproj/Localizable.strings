@@ -75,7 +75,7 @@
 "iPhone を振動させました" = "O iPhone vibrou.";
 "iPhone を置いて%lld分たったため、いびきを数え始めました" = "O iPhone foi deixado de lado há %1$lld min, então a contagem de roncos foi retomada.";
 "iPhone 本体の振動で知らせます (安定して動きます)。" = "Avisa com a vibração do iPhone (o mais confiável).";
-"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「寝る時刻のアラーム」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Coloque o iPhone ao lado do travesseiro enquanto carrega e toque em “Iniciar monitoramento”. A detecção continua mesmo com a tela bloqueada.\n\nSe o ronco continuar, você será avisado por vibração (e por notificação com a tela bloqueada). Aproveite para virar de lado e mudar de posição.\n\nToque em “Demonstração de detecção” para testar o que acontece quando o ronco é detectado com seus ajustes (registro e vibração). Bloqueie a tela durante a demonstração para ver também a notificação (se o seu dispositivo de aviso for o Apple Watch, o Watch é notificado).\n\nAtive o “Alarme da hora de dormir” pelo botão de despertador no canto superior direito e, nas noites em que esquecer de iniciar o monitoramento, um alarme tocará no horário definido. O monitoramento para automaticamente de manhã.";
+"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「おやすみコール」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Coloque o iPhone ao lado do travesseiro enquanto carrega e toque em “Iniciar monitoramento”. A detecção continua mesmo com a tela bloqueada.\n\nSe o ronco continuar, você será avisado por vibração (e por notificação com a tela bloqueada). Aproveite para virar de lado e mudar de posição.\n\nToque em “Demonstração de detecção” para testar o que acontece quando o ronco é detectado com seus ajustes (registro e vibração). Bloqueie a tela durante a demonstração para ver também a notificação (se o seu dispositivo de aviso for o Apple Watch, o Watch é notificado).\n\nAtive o “Alarme da hora de dormir” pelo botão de despertador no canto superior direito e, nas noites em que esquecer de iniciar o monitoramento, um alarme tocará no horário definido. O monitoramento para automaticamente de manhã.";
 "“‘天気’が開かれたかまたは閉じられたとき”" = "“Quando ‘Tempo’ for aberto ou fechado”";
 "“このデバイスが電源に接続されたとき”" = "“Quando este dispositivo for conectado à energia”";
 "① OK をタップ" = "① Toque em OK";
@@ -97,7 +97,7 @@
 "いびきの合計" = "Ronco total";
 "いびきの波形" = "Forma de onda do ronco";
 "いびきの監視が止まっています" = "O monitoramento do ronco parou";
-"いびきの監視と寝る時刻のアラームは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "O monitoramento do ronco e o alarme da hora de dormir estão disponíveis com uma assinatura. Sem ela, você ainda pode ver seus registros e gravações anteriores.";
+"いびきの監視とおやすみコールは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "O monitoramento do ronco e o alarme da hora de dormir estão disponíveis com uma assinatura. Sem ela, você ainda pode ver seus registros e gravações anteriores.";
 "いびきの監視を使うには" = "Para usar o monitoramento do ronco";
 "いびきの監視を始めましょう" = "Hora de iniciar o monitoramento do ronco";
 "いびきを検知 (%@秒, %@ dB)" = "Ronco detectado (%1$@ s, %2$@ dB)";
@@ -270,8 +270,8 @@
 "寝る時刻になりました。「監視を開始」を押すか、この通知をタップすると監視を始めます。" = "É hora de dormir. Toque em “Iniciar monitoramento” ou nesta notificação para começar.";
 "寝る時刻に監視を始めていなければ鳴らします" = "Toca na hora de dormir se o monitoramento não tiver começado.";
 "寝る時刻のお知らせから監視を開始しました" = "Monitoramento iniciado pelo lembrete da hora de dormir.";
-"寝る時刻のアラーム" = "Alarme da hora de dormir";
-"寝る時刻のアラームから監視を開始しました" = "Monitoramento iniciado pelo alarme da hora de dormir.";
+"おやすみコール" = "Alarme da hora de dormir";
+"おやすみコールから監視を開始しました" = "Monitoramento iniciado pelo alarme da hora de dormir.";
 "寝る準備ができたら、アラームを待たずに「監視を開始」を押してください。監視を始めると、このアラームは取り消します。" = "Quando estiver pronto para dormir, toque em “Iniciar monitoramento” sem esperar o alarme. Iniciar o monitoramento cancela este alarme.";
 "寝付くまでの間は検知しないようにできます。" = "Você pode evitar a detecção enquanto pega no sono.";
 "寝返りを打てればいいのに" = "Se ao menos desse para virar de lado";
