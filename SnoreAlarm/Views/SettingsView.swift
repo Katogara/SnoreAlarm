@@ -110,6 +110,7 @@ struct SettingsView: View {
                             UserDefaults.standard.set(false, forKey: AlarmSettings.Key.hasCompletedOnboarding)
                         }
                     }
+                    Link("プライバシーポリシー", destination: SubscriptionStore.privacyURL)
                 } header: {
                     Text("このアプリについて")
                 }
