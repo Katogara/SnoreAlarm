@@ -13,6 +13,8 @@ private enum NotificationID {
     static func missedNight(_ index: Int) -> String { "missedNight-\(index)" }
     /// 以前の版の「自動開始できませんでした」のお知らせ (残っていれば消す)
     static let legacyReminders = (0..<7).map { "scheduleReminder-\($0)" }
+    /// iPhone で振動しているあいだの「振動を止める」付きの通知 (振動が終わったら消す)
+    static let iPhoneAlarm = "iPhoneAlarm"
     static let watchAlertPrefix = "watchAlert-"
     static func watchAlert(_ alarm: Int, _ tap: Int) -> String { "\(watchAlertPrefix)\(alarm)-\(tap)" }
 }
@@ -56,7 +58,26 @@ final class AlarmNotifier: NSObject, UNUserNotificationCenterDelegate {
         if stoppable {
             content.categoryIdentifier = NotificationID.category
         }
-        center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+        let id = stoppable ? NotificationID.iPhoneAlarm : UUID().uuidString
+        let center = center
+        center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil)) { error in
+            if let error {
+                DiagnosticLog.write("notification failed: id=\(id) \(error)")
+                return
+            }
+            // ロック画面に出なかったときに理由を追えるよう、通知の設定を残す (集中モードの状態はアプリから読めない)
+            center.getNotificationSettings { settings in
+                DiagnosticLog.write("notification posted: id=\(id) auth=\(settings.authorizationStatus.rawValue) "
+                    + "alert=\(settings.alertSetting.rawValue) lockScreen=\(settings.lockScreenSetting.rawValue) "
+                    + "center=\(settings.notificationCenterSetting.rawValue) banner=\(settings.alertStyle.rawValue) "
+                    + "timeSensitive=\(settings.timeSensitiveSetting.rawValue) summary=\(settings.scheduledDeliverySetting.rawValue)")
+            }
+        }
+    }
+
+    /// iPhone の振動が終わったとき (止めたときも、最後まで鳴ったときも)、「振動を止める」の通知を消す
+    func clearIPhoneAlarm() {
+        center.removeDeliveredNotifications(withIdentifiers: [NotificationID.iPhoneAlarm])
     }
 
     /// Apple Watch で知らせるための通知 (`WatchAlert`)。iPhone の画面ロック中は Watch に転送されて手首が振動する。

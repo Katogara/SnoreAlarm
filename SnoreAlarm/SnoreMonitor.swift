@@ -768,6 +768,9 @@ final class SnoreMonitor {
         }
         watchTask?.cancel()
         watchTask = nil
+        if state == .alarming {
+            notifier.clearIPhoneAlarm()
+        }
         vibrator.stop()
         removeObservers()
         stopEngine()
@@ -1171,6 +1174,9 @@ final class SnoreMonitor {
         watchTask = nil
         // Watch 向けの通知はアラームの間は消さずに残しているので、ここでまとめて消す
         notifier.clearWatchAlerts()
+        // 振動が終わったあとに押しても何も起きない「振動を止める」の通知を残さない
+        notifier.clearIPhoneAlarm()
+        DiagnosticLog.write("alarm finished")
         if isDemo {
             finishDemo("デモを終了しました")
             return
