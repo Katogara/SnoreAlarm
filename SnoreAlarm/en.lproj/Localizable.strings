@@ -75,7 +75,7 @@
 "iPhone を振動させました" = "Vibrated the iPhone.";
 "iPhone を置いて%lld分たったため、いびきを数え始めました" = "The iPhone has been set down for %1$lld min, so snore counting has resumed.";
 "iPhone 本体の振動で知らせます (安定して動きます)。" = "Alerts you with iPhone vibration (most reliable).";
-"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「寝る時刻のアラーム」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Place your iPhone by your pillow while it charges, then press “Start Monitoring”. Detection continues even when the screen is locked.\n\nIf snoring continues, you’ll be alerted by vibration (and a notification while the screen is locked). Use it as a cue to turn over and change position.\n\nPress “Snore Detection Demo” to try what happens when snoring is detected under your settings (log and vibration). Lock the screen during the demo to see the notification too (if your alert device is Apple Watch, the Watch is notified).\n\nTurn on “Bedtime Alarm” with the alarm-clock button at the top right, and on nights you forget to start monitoring, an alarm will ring at the set time. Monitoring stops automatically in the morning.";
+"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「おやすみコール」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Place your iPhone by your pillow while it charges, then press “Start Monitoring”. Detection continues even when the screen is locked.\n\nIf snoring continues, you’ll be alerted by vibration (and a notification while the screen is locked). Use it as a cue to turn over and change position.\n\nPress “Snore Detection Demo” to try what happens when snoring is detected under your settings (log and vibration). Lock the screen during the demo to see the notification too (if your alert device is Apple Watch, the Watch is notified).\n\nTurn on “Bedtime Alarm” with the alarm-clock button at the top right, and on nights you forget to start monitoring, an alarm will ring at the set time. Monitoring stops automatically in the morning.";
 "“‘天気’が開かれたかまたは閉じられたとき”" = "“When ‘Weather’ is opened or closed”";
 "“このデバイスが電源に接続されたとき”" = "“When this device is connected to power”";
 "① OK をタップ" = "① Tap OK";
@@ -97,7 +97,7 @@
 "いびきの合計" = "Total Snoring";
 "いびきの波形" = "Snore waveform";
 "いびきの監視が止まっています" = "Snore monitoring has stopped";
-"いびきの監視と寝る時刻のアラームは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "Snore monitoring and the bedtime alarm are available with a subscription. Without one, you can still view your past records and recordings.";
+"いびきの監視とおやすみコールは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "Snore monitoring and the bedtime alarm are available with a subscription. Without one, you can still view your past records and recordings.";
 "いびきの監視を使うには" = "To Use Snore Monitoring";
 "いびきの監視を始めましょう" = "Time to start snore monitoring";
 "いびきを検知 (%@秒, %@ dB)" = "Snore detected (%1$@ s, %2$@ dB)";
@@ -270,8 +270,8 @@
 "寝る時刻になりました。「監視を開始」を押すか、この通知をタップすると監視を始めます。" = "It’s bedtime. Press “Start Monitoring” or tap this notification to start monitoring.";
 "寝る時刻に監視を始めていなければ鳴らします" = "Rings at bedtime if monitoring hasn’t started.";
 "寝る時刻のお知らせから監視を開始しました" = "Monitoring started from the bedtime reminder.";
-"寝る時刻のアラーム" = "Bedtime Alarm";
-"寝る時刻のアラームから監視を開始しました" = "Monitoring started from the bedtime alarm.";
+"おやすみコール" = "Bedtime Alarm";
+"おやすみコールから監視を開始しました" = "Monitoring started from the bedtime alarm.";
 "寝る準備ができたら、アラームを待たずに「監視を開始」を押してください。監視を始めると、このアラームは取り消します。" = "When you’re ready for bed, press “Start Monitoring” without waiting for the alarm. Starting monitoring cancels this alarm.";
 "寝付くまでの間は検知しないようにできます。" = "You can skip detection while you’re falling asleep.";
 "寝返りを打てればいいのに" = "If Only You Could Turn Over";
