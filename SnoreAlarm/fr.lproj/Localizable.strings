@@ -75,7 +75,7 @@
 "iPhone を振動させました" = "L’iPhone a vibré.";
 "iPhone を置いて%lld分たったため、いびきを数え始めました" = "L’iPhone est posé depuis %1$lld min : le comptage des ronflements reprend.";
 "iPhone 本体の振動で知らせます (安定して動きます)。" = "Vous alerte par la vibration de l’iPhone (le plus fiable).";
-"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「寝る時刻のアラーム」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Posez votre iPhone près de votre oreiller pendant qu’il charge, puis touchez « Démarrer la surveillance ». La détection continue même écran verrouillé.\n\nSi les ronflements continuent, vous êtes alerté par vibration (et par notification quand l’écran est verrouillé). Profitez-en pour vous retourner et changer de position.\n\nTouchez « Démo de détection » pour essayer ce qui se passe quand un ronflement est détecté avec vos réglages (journal et vibration). Verrouillez l’écran pendant la démo pour voir aussi la notification (si votre appareil d’alerte est l’Apple Watch, c’est la Watch qui est notifiée).\n\nActivez « Alarme du coucher » avec le bouton réveil en haut à droite : les nuits où vous oubliez de lancer la surveillance, une alarme sonnera à l’heure fixée. La surveillance s’arrête automatiquement le matin.";
+"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「おやすみコール」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Posez votre iPhone près de votre oreiller pendant qu’il charge, puis touchez « Démarrer la surveillance ». La détection continue même écran verrouillé.\n\nSi les ronflements continuent, vous êtes alerté par vibration (et par notification quand l’écran est verrouillé). Profitez-en pour vous retourner et changer de position.\n\nTouchez « Démo de détection » pour essayer ce qui se passe quand un ronflement est détecté avec vos réglages (journal et vibration). Verrouillez l’écran pendant la démo pour voir aussi la notification (si votre appareil d’alerte est l’Apple Watch, c’est la Watch qui est notifiée).\n\nActivez « Alarme du coucher » avec le bouton réveil en haut à droite : les nuits où vous oubliez de lancer la surveillance, une alarme sonnera à l’heure fixée. La surveillance s’arrête automatiquement le matin.";
 "“‘天気’が開かれたかまたは閉じられたとき”" = "« Quand “Météo” est ouverte ou fermée »";
 "“このデバイスが電源に接続されたとき”" = "« Quand cet appareil est branché à l’alimentation »";
 "① OK をタップ" = "① Touchez OK";
@@ -97,7 +97,7 @@
 "いびきの合計" = "Total des ronflements";
 "いびきの波形" = "Forme d’onde du ronflement";
 "いびきの監視が止まっています" = "La surveillance des ronflements s’est arrêtée";
-"いびきの監視と寝る時刻のアラームは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "La surveillance des ronflements et l’alarme du coucher sont disponibles avec un abonnement. Sans abonnement, vous pouvez toujours consulter vos relevés et enregistrements passés.";
+"いびきの監視とおやすみコールは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "La surveillance des ronflements et l’alarme du coucher sont disponibles avec un abonnement. Sans abonnement, vous pouvez toujours consulter vos relevés et enregistrements passés.";
 "いびきの監視を使うには" = "Utiliser la surveillance des ronflements";
 "いびきの監視を始めましょう" = "C’est l’heure de lancer la surveillance des ronflements";
 "いびきを検知 (%@秒, %@ dB)" = "Ronflement détecté (%1$@ s, %2$@ dB)";
@@ -270,8 +270,8 @@
 "寝る時刻になりました。「監視を開始」を押すか、この通知をタップすると監視を始めます。" = "C’est l’heure de dormir. Touchez « Démarrer la surveillance » ou cette notification pour lancer la surveillance.";
 "寝る時刻に監視を始めていなければ鳴らします" = "Sonne à l’heure du coucher si la surveillance n’a pas démarré.";
 "寝る時刻のお知らせから監視を開始しました" = "Surveillance démarrée depuis le rappel du coucher.";
-"寝る時刻のアラーム" = "Alarme du coucher";
-"寝る時刻のアラームから監視を開始しました" = "Surveillance démarrée depuis l’alarme du coucher.";
+"おやすみコール" = "Alarme du coucher";
+"おやすみコールから監視を開始しました" = "Surveillance démarrée depuis l’alarme du coucher.";
 "寝る準備ができたら、アラームを待たずに「監視を開始」を押してください。監視を始めると、このアラームは取り消します。" = "Quand vous êtes prêt à dormir, touchez « Démarrer la surveillance » sans attendre l’alarme. Démarrer la surveillance annule cette alarme.";
 "寝付くまでの間は検知しないようにできます。" = "Vous pouvez ne pas détecter pendant que vous vous endormez.";
 "寝返りを打てればいいのに" = "Si seulement on pouvait se retourner";
