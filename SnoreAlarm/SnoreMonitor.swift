@@ -109,6 +109,8 @@ final class SnoreMonitor {
     @ObservationIgnored private var scheduleTask: Task<Void, Never>?
     @ObservationIgnored private var demoTask: Task<Void, Never>?
     @ObservationIgnored private var demoBackgroundTask: UIBackgroundTaskIdentifier = .invalid
+    /// デモのあいだ、画面ロック中も動けるよう録音を動かしている (`startDemoAudio`)
+    @ObservationIgnored private var demoUsesAudio = false
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private let notifier = AlarmNotifier()
     @ObservationIgnored private let watchLink = WatchLink()
@@ -595,12 +597,17 @@ final class SnoreMonitor {
         state = .monitoring
         append(.info, "デモを開始しました (\(settings.windowSeconds)秒以内に\(settings.requiredSnores)回のいびきで振動)")
         appendAlertDeviceStatus(notificationsAllowed: notificationsAllowed)
-        demoBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "SnoreDemo") { [weak self] in
-            MainActor.assumeIsolated { self?.finishDemo("デモを終了しました (バックグラウンドの制限時間)") }
+        // 画面をロックしても止まらないよう、監視と同じくマイクの録音を動かしておく (音はデモに使わない)。
+        // 録音中でなければ、iOS がバックグラウンドで動ける 30 秒ほどでデモが止まり、ロック中の iPhone の振動も出ない。
+        // マイクを使えないときだけ、バックグラウンドの時間をもらって動かす
+        if !startDemoAudio() {
+            demoBackgroundTask = UIApplication.shared.beginBackgroundTask(withName: "SnoreDemo") { [weak self] in
+                MainActor.assumeIsolated { self?.finishDemo("デモを終了しました (バックグラウンドの制限時間)") }
+            }
         }
 
         // Watch で知らせる設定なら Watch に通知する。Watch に届くのは iPhone の画面がロックされているときだけなので、
-        // 画面がロックされたと分かってから、いびきを始める
+        // 画面がロックされてから、いびきを始める
         let usesWatch = settings.alertDevice.usesWatch
         if usesWatch {
             append(.info, "Apple Watch で知らせるデモです。すぐに iPhone の画面をロックしてください (画面が点いていると iPhone で振動します)")
@@ -609,35 +616,41 @@ final class SnoreMonitor {
         let config = settings.detectorConfig
         demoTask = Task { [weak self] in
             if usesWatch {
-                // パスコードを設定していると、ロックしてから 10 秒ほどは「ほかのアプリを使用中」と見分けがつかず
-                // (`isUsingOtherApp`)、その間に振動の条件に達すると Watch ではなく iPhone で知らせてしまう。
-                // ロック中と分かるまで待つ。ロックしないまま `demoLockTimeout` 秒たったら、そのまま始める
+                // ロックしないまま `demoLockTimeout` 秒たったら、そのまま始める
                 let deadline = Date().addingTimeInterval(Self.demoLockTimeout)
                 while Date() < deadline {
                     guard !Task.isCancelled, let self, self.isDemo else { return }
-                    if self.isInBackground && !self.isUsingOtherApp { break }
-                    try? await Task.sleep(for: .milliseconds(500))
+                    if self.isInBackground { break }
+                    try? await Task.sleep(for: .milliseconds(300))
                 }
             }
             var detector = SnoreDetector(config: config)
-            for frame in frames {
-                try? await Task.sleep(for: .seconds(frame.duration))
+            // 画面ロック中は短い待ちが間引かれて遅れるため、1 フレームずつ待たずに、過ぎた時間の分をまとめて流す
+            let start = Date()
+            var next = 0
+            while next < frames.count {
+                try? await Task.sleep(for: .milliseconds(200))
                 guard !Task.isCancelled, let self, self.isDemo, self.state == .monitoring else { return }
-                let events = detector.process(frame)
-                self.levelDB = frame.levelDB
-                self.thresholdDB = detector.thresholdDB
-                for event in events {
-                    switch event {
-                    case .snore(let snore):
-                        self.snoreCount += 1
-                        self.append(.snore, "[デモ] いびきを検知 (\(Self.seconds(snore.duration))秒, \(Self.decibels(snore.peakDB)) dB)")
-                    case .noise:
-                        break
-                    case .alarm(let count):
-                        self.alarmCount += 1
-                        self.append(.alarm, "[デモ] \(count)回のいびきを検知したため振動しました")
-                        self.startAlarm(snoreCount: count)
-                        return
+                let elapsed = Date().timeIntervalSince(start)
+                while next < frames.count, frames[next].time <= elapsed {
+                    let frame = frames[next]
+                    next += 1
+                    let events = detector.process(frame)
+                    self.levelDB = frame.levelDB
+                    self.thresholdDB = detector.thresholdDB
+                    for event in events {
+                        switch event {
+                        case .snore(let snore):
+                            self.snoreCount += 1
+                            self.append(.snore, "[デモ] いびきを検知 (\(Self.seconds(snore.duration))秒, \(Self.decibels(snore.peakDB)) dB)")
+                        case .noise:
+                            break
+                        case .alarm(let count):
+                            self.alarmCount += 1
+                            self.append(.alarm, "[デモ] \(count)回のいびきを検知したため振動しました")
+                            self.startAlarm(snoreCount: count)
+                            return
+                        }
                     }
                 }
             }
@@ -663,6 +676,37 @@ final class SnoreMonitor {
         if demoBackgroundTask != .invalid {
             UIApplication.shared.endBackgroundTask(demoBackgroundTask)
             demoBackgroundTask = .invalid
+        }
+        if demoUsesAudio {
+            demoUsesAudio = false
+            stopEngine()
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        }
+    }
+
+    /// デモのあいだ、画面をロックしてもアプリが止まらないよう録音を動かす。マイクの音は捨てる。
+    /// マイクが許可されていない・使えないときは false
+    private func startDemoAudio() -> Bool {
+        guard AVAudioApplication.shared.recordPermission == .granted else { return false }
+        do {
+            try configureSession()
+            let input = engine.inputNode
+            let format = input.outputFormat(forBus: 0)
+            guard format.sampleRate > 0, format.channelCount > 0 else {
+                try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                return false
+            }
+            input.removeTap(onBus: 0)
+            input.installTap(onBus: 0, bufferSize: 4096, format: format) { _, _ in }
+            engine.prepare()
+            try engine.start()
+            demoUsesAudio = true
+            return true
+        } catch {
+            DiagnosticLog.write("demo audio start failed: \(error)")
+            stopEngine()
+            try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+            return false
         }
     }
 
@@ -1003,7 +1047,9 @@ final class SnoreMonitor {
     ///   - alsoIPhone: iPhone も同時に振動させる (両方で知らせる設定)。どちらの通知や画面で止めても両方止まる
     private func alertWithWatch(duration: TimeInterval, title: String, body: String, iPhoneBody: String,
                                 alsoIPhone: Bool = false) {
-        let usingOtherApp = isUsingOtherApp
+        // パスコードを設定していると、ロックしてから 10 秒ほどは「ほかのアプリを使用中」と見分けがつかない。
+        // デモはロックしてもらってから始めるので、裏に回っていればロック中とみなす
+        let usingOtherApp = isDemo ? false : isUsingOtherApp
         if !isInBackground || usingOtherApp {
             // iPhone の画面が点いているあいだは、通知が Watch に転送されない
             if !alsoIPhone {
@@ -1066,8 +1112,8 @@ final class SnoreMonitor {
 
     /// 「Watch に届くかテスト」で OK を押してから通知を出すまでの秒数 (その間に iPhone をロックしてもらう)
     nonisolated static let watchTestDelay: TimeInterval = 5
-    /// Apple Watch のデモで、画面をロックしてから iPhone がロック中と分かるまでのおおよその秒数 (パスコードを設定しているとき)
-    nonisolated static let demoLockDelay: TimeInterval = 10
+    /// Apple Watch のデモで、「開始」を押してから画面をロックするまでのおおよその秒数 (案内に出す秒数の見積もりに使う)
+    nonisolated static let demoLockDelay: TimeInterval = 3
     /// Apple Watch のデモで、画面のロックを待つ長さ。過ぎたら、ロックしていなくてもいびきを始める
     nonisolated static let demoLockTimeout: TimeInterval = 20
     /// OK を押してから Watch が振動するまでのおおよその秒数 (通知を出してから Watch に届くまでにも数秒かかる。実機で 8〜10 秒)
