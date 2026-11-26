@@ -25,9 +25,9 @@ final class SubscriptionStore {
 
     /// 利用規約 (Apple の標準の使用許諾契約)
     static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
-    /// プライバシーポリシー (ソースのない別の公開リポジトリ Katogara/snorealarm-support の GitHub Pages)。
+    /// プライバシーポリシー (アプリ共通のサポートサイト Katogara/Katogara.github.io の GitHub Pages。ソースは置かない)。
     /// App Store Connect にも同じ URL を入れる
-    static let privacyURL = URL(string: "https://katogara.github.io/snorealarm-support/privacy.html")!
+    static let privacyURL = URL(string: "https://katogara.github.io/snorealarm/privacy.html")!
 
     /// 登録中 (無料の体験期間を含む)
     private(set) var isSubscribed: Bool
