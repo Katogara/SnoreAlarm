@@ -366,6 +366,7 @@
 "この時刻から翌日のこの時刻の前までに始めた監視を一晩としてまとめ、最初の開始から最後の終了までをグラフにします (初期値 12:00)。昼に眠る場合は、起きている時間帯の時刻にしてください。": "Überwachungen, die zwischen dieser Uhrzeit und derselben Uhrzeit am nächsten Tag gestartet werden, gelten als eine Nacht und werden vom ersten Start bis zum letzten Ende dargestellt (Standard 12:00). Schläfst du tagsüber, wähle eine Zeit, zu der du normalerweise wach bist.",
 "はじめの説明を見る": "Einführung ansehen",
 "このアプリについて": "Über diese App",
+"プライバシーポリシー": "Datenschutzerklärung",
 "OK を押すと、{1}秒後に Apple Watch に通知を出します。": "Wenn du auf OK tippst, wird nach {1} s eine Mitteilung an die Apple Watch gesendet.",
 "iPhone の通知が Watch に届くのは、iPhone の画面がロックされているときだけです。OK を押したら、すぐに iPhone のサイドボタンを押して画面をロックしてください。通知を出してから Watch に届くまで、さらに数秒かかることがあります (OK を押してから{1}秒ほど)。": "iPhone-Mitteilungen erreichen die Watch nur bei gesperrtem iPhone-Bildschirm. Drücke nach dem Tippen auf OK sofort die Seitentaste des iPhone, um den Bildschirm zu sperren. Bis zur Watch kann es noch einige Sekunden dauern (etwa {1} s nach dem Tippen auf OK).",
 "Watch が振動すれば準備は完了です。Watch から音が鳴ったときは、Watch を消音モードにしてください (コントロールセンターのベルのボタン。消音モードでも振動します)。Watch が振動せず iPhone に通知が出たときは、ロックが間に合わなかったか、Watch の準備がまだです (「設定」>「Apple Watch で使うための準備」)。": "Vibriert die Watch, ist alles bereit. Spielt die Watch einen Ton, schalte sie in den Stummmodus (Glocke im Kontrollzentrum; sie vibriert trotzdem). Vibriert die Watch nicht und erscheint die Mitteilung auf dem iPhone, wurde der Bildschirm nicht rechtzeitig gesperrt oder die Watch ist noch nicht eingerichtet (Einstellungen > „Apple Watch einrichten“).",
