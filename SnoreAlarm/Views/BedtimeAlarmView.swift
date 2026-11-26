@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 寝る時刻のアラーム (始め忘れの防止) の画面。メイン画面の右上の目覚ましのボタンから開く。
+/// おやすみコール (始め忘れの防止) の画面。メイン画面の右上の目覚ましのボタンから開く。
 /// いちばん上に「アラームで知らせる」を置き、通知・アプリを自動で開くは「ほかの知らせ方」として下に置く。
 /// アラームが使えない iOS 26 より前は、「始め忘れの防止」として知らせ方を選ぶ画面になる
 struct BedtimeAlarmView: View {
@@ -21,7 +21,7 @@ struct BedtimeAlarmView: View {
 
     /// 画面の名前。メイン画面のボタンの読み上げにも使う
     @MainActor
-    static var title: String { BedtimeAlarm.isSupported ? String(localized: "寝る時刻のアラーム") : String(localized: "始め忘れの防止") }
+    static var title: String { BedtimeAlarm.isSupported ? String(localized: "おやすみコール") : String(localized: "始め忘れの防止") }
 
     /// 始め忘れの防止のやり方
     enum StartGuard: String, Identifiable {

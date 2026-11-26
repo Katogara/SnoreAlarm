@@ -77,7 +77,7 @@ struct ContentView: View {
                     }
                 } else {
                     Section {
-                        PhraseText("iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「寝る時刻のアラーム」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。")
+                        PhraseText("iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「おやすみコール」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -141,7 +141,7 @@ struct ContentView: View {
             .sheet(isPresented: $showingWatchTest) {
                 WatchTestSheet()
             }
-            // 登録していないのに監視を始めようとしたとき (寝る時刻のアラームからを含む)
+            // 登録していないのに監視を始めようとしたとき (おやすみコールからを含む)
             .sheet(isPresented: Binding(
                 get: { subscription.isPaywallPresented && hasCompletedOnboarding },
                 set: { subscription.isPaywallPresented = $0 }
@@ -521,8 +521,8 @@ private struct ControlButtons: View {
             Button("開始") { startDemo() }
             Button("やめる", role: .cancel) {}
         } message: {
-            let seconds = Int(DemoSignal.secondsUntilAlarm(for: AlarmSettings.load(),
-                                                           leadIn: DemoSignal.leadIn + SnoreMonitor.watchTestDelay))
+            // 画面をロックしたあと、iPhone がロック中と分かるのを待ってから、いびきを始める
+            let seconds = Int(SnoreMonitor.demoLockDelay + DemoSignal.secondsUntilAlarm(for: AlarmSettings.load()))
             PhraseText("「開始」を押したら、すぐに iPhone のサイドボタンを押して画面をロックしてください。約\(seconds)秒後に Apple Watch が振動します。画面が点いたままだと、Watch ではなく iPhone が振動します。")
         }
     }
