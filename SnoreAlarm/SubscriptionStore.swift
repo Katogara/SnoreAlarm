@@ -25,6 +25,8 @@ final class SubscriptionStore {
 
     /// 利用規約 (Apple の標準の使用許諾契約)
     static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+    /// プライバシーポリシー (リポジトリの PRIVACY.md)。App Store Connect にも同じ URL を入れる
+    static let privacyURL = URL(string: "https://github.com/Katogara/SnoreAlarm/blob/main/PRIVACY.md")!
 
     /// 登録中 (無料の体験期間を含む)
     private(set) var isSubscribed: Bool
@@ -92,6 +94,7 @@ struct PaywallView: View {
         .storeButton(.visible, for: .restorePurchases)
         .storeButton(.visible, for: .cancellation)
         .subscriptionStorePolicyDestination(url: SubscriptionStore.termsURL, for: .termsOfService)
+        .subscriptionStorePolicyDestination(url: SubscriptionStore.privacyURL, for: .privacyPolicy)
         .onInAppPurchaseCompletion { _, result in
             if case .success(.success(let verification)) = result, case .verified(let transaction) = verification {
                 await transaction.finish()
