@@ -75,7 +75,7 @@
 "iPhone を振動させました" = "Das iPhone hat vibriert.";
 "iPhone を置いて%lld分たったため、いびきを数え始めました" = "Das iPhone liegt seit %1$lld Min., daher wird das Schnarchen wieder gezählt.";
 "iPhone 本体の振動で知らせます (安定して動きます)。" = "Benachrichtigt dich durch Vibration des iPhone (am zuverlässigsten).";
-"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「寝る時刻のアラーム」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Lege dein iPhone beim Laden neben dein Kopfkissen und tippe auf „Überwachung starten“. Die Erkennung läuft auch bei gesperrtem Bildschirm weiter.\n\nHält das Schnarchen an, wirst du per Vibration benachrichtigt (bei gesperrtem Bildschirm auch per Mitteilung). Nimm es als Anlass, dich umzudrehen und die Lage zu ändern.\n\nMit „Schnarcherkennungs-Demo“ kannst du ausprobieren, was bei erkanntem Schnarchen mit deinen Einstellungen passiert (Protokoll und Vibration). Sperrst du während der Demo den Bildschirm, siehst du auch die Mitteilung (ist dein Gerät für Hinweise die Apple Watch, wird die Watch benachrichtigt).\n\nSchalte mit der Weckertaste oben rechts den „Schlafenszeit-Wecker“ ein, dann klingelt in Nächten, in denen du den Start vergisst, zur festgelegten Zeit ein Wecker. Morgens endet die Überwachung automatisch.";
+"iPhoneを充電しながら枕元に置き、「監視を開始」を押してください。画面をロックしても検知を続けます。\n\nいびきが続くとバイブレーションで知らせます (画面ロック中は通知も出します)。寝返りを打つなど、姿勢を変えるきっかけにしてください。\n\n「いびき検知デモ」を押すと、設定した条件でいびきを検知したときの動作 (ログと振動) を試せます。デモ中に画面をロックすると、通知も確認できます (知らせる端末が Apple Watch なら Watch に通知します)。\n\n右上の目覚ましのボタンから「おやすみコール」をオンにすると、監視を始め忘れた夜に、決めた時刻にアラームで知らせます。朝は自動で監視を止めます。" = "Lege dein iPhone beim Laden neben dein Kopfkissen und tippe auf „Überwachung starten“. Die Erkennung läuft auch bei gesperrtem Bildschirm weiter.\n\nHält das Schnarchen an, wirst du per Vibration benachrichtigt (bei gesperrtem Bildschirm auch per Mitteilung). Nimm es als Anlass, dich umzudrehen und die Lage zu ändern.\n\nMit „Schnarcherkennungs-Demo“ kannst du ausprobieren, was bei erkanntem Schnarchen mit deinen Einstellungen passiert (Protokoll und Vibration). Sperrst du während der Demo den Bildschirm, siehst du auch die Mitteilung (ist dein Gerät für Hinweise die Apple Watch, wird die Watch benachrichtigt).\n\nSchalte mit der Weckertaste oben rechts den „Schlafenszeit-Wecker“ ein, dann klingelt in Nächten, in denen du den Start vergisst, zur festgelegten Zeit ein Wecker. Morgens endet die Überwachung automatisch.";
 "“‘天気’が開かれたかまたは閉じられたとき”" = "„Wenn ‚Wetter‘ geöffnet oder geschlossen wird“";
 "“このデバイスが電源に接続されたとき”" = "„Wenn dieses Gerät mit dem Strom verbunden wird“";
 "① OK をタップ" = "① Auf OK tippen";
@@ -97,7 +97,7 @@
 "いびきの合計" = "Schnarchen gesamt";
 "いびきの波形" = "Schnarch-Wellenform";
 "いびきの監視が止まっています" = "Die Schnarchüberwachung wurde gestoppt";
-"いびきの監視と寝る時刻のアラームは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "Schnarchüberwachung und Schlafenszeit-Wecker sind mit einem Abo verfügbar. Ohne Abo kannst du deine bisherigen Aufzeichnungen und Aufnahmen weiterhin ansehen.";
+"いびきの監視とおやすみコールは、サブスクリプションに登録すると使えます。登録していなくても、これまでの記録と録音は見られます。" = "Schnarchüberwachung und Schlafenszeit-Wecker sind mit einem Abo verfügbar. Ohne Abo kannst du deine bisherigen Aufzeichnungen und Aufnahmen weiterhin ansehen.";
 "いびきの監視を使うには" = "Schnarchüberwachung nutzen";
 "いびきの監視を始めましょう" = "Zeit, die Schnarchüberwachung zu starten";
 "いびきを検知 (%@秒, %@ dB)" = "Schnarchen erkannt (%1$@ s, %2$@ dB)";
@@ -270,8 +270,8 @@
 "寝る時刻になりました。「監視を開始」を押すか、この通知をタップすると監視を始めます。" = "Schlafenszeit. Tippe auf „Überwachung starten“ oder auf diese Mitteilung, um die Überwachung zu starten.";
 "寝る時刻に監視を始めていなければ鳴らします" = "Klingelt zur Schlafenszeit, wenn die Überwachung nicht läuft.";
 "寝る時刻のお知らせから監視を開始しました" = "Überwachung über die Schlafenszeit-Erinnerung gestartet.";
-"寝る時刻のアラーム" = "Schlafenszeit-Wecker";
-"寝る時刻のアラームから監視を開始しました" = "Überwachung über den Schlafenszeit-Wecker gestartet.";
+"おやすみコール" = "Schlafenszeit-Wecker";
+"おやすみコールから監視を開始しました" = "Überwachung über den Schlafenszeit-Wecker gestartet.";
 "寝る準備ができたら、アラームを待たずに「監視を開始」を押してください。監視を始めると、このアラームは取り消します。" = "Wenn du bereit fürs Bett bist, tippe auf „Überwachung starten“, ohne auf den Wecker zu warten. Der Start der Überwachung bricht diesen Wecker ab.";
 "寝付くまでの間は検知しないようにできます。" = "Während du einschläfst, kann die Erkennung ausgesetzt werden.";
 "寝返りを打てればいいのに" = "Wenn man sich doch nur umdrehen könnte";
