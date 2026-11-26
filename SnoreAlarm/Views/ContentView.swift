@@ -521,8 +521,9 @@ private struct ControlButtons: View {
             Button("開始") { startDemo() }
             Button("やめる", role: .cancel) {}
         } message: {
-            // 画面をロックしたあと、iPhone がロック中と分かるのを待ってから、いびきを始める
-            let seconds = Int(SnoreMonitor.demoLockDelay + DemoSignal.secondsUntilAlarm(for: AlarmSettings.load()))
+            // 画面をロックしてから、いびきを始める。通知を出してから Watch に届くまでにも数秒かかる
+            let seconds = Int(SnoreMonitor.demoLockDelay + DemoSignal.secondsUntilAlarm(for: AlarmSettings.load())
+                              + SnoreMonitor.demoWatchArrival)
             PhraseText("「開始」を押したら、すぐに iPhone のサイドボタンを押して画面をロックしてください。約\(seconds)秒後に Apple Watch が振動します。画面が点いたままだと、Watch ではなく iPhone が振動します。")
         }
     }
