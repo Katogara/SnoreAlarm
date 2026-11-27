@@ -389,3 +389,4 @@
 "高 (小さないびきも検知)" = "Hoch (erkennt auch leises Schnarchen)";
 "鳴らす時刻" = "Weckzeit";
 "鳴らす時刻と自動終了に別の時刻を指定してください。" = "Lege unterschiedliche Zeiten für Wecker und automatisches Ende fest.";
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります" = "Eine andere App gibt Ton wieder. Das Mikrofon nimmt diesen Ton ebenfalls auf, daher kann leises Schnarchen überhört werden. Bei geringerer Lautstärke wird es seltener überhört.";
