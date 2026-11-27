@@ -386,5 +386,6 @@
 "書き出したログを共有": "Share Exported Log",
 "診断ログを消去": "Clear Diagnostic Log",
 "診断 (開発用)": "Diagnostics (Development)",
-"不具合の調査用に、監視中の様子 (マイク入力・中断・画面ロック・いびき判定の内訳) を記録しています。録音した音そのものは含みません。現在 {1}。この項目はリリース版では表示されません。": "For troubleshooting, what happens during monitoring (microphone input, interruptions, screen lock, and snore detection details) is logged. Recorded audio itself isn’t included. Current size: {1}. This section isn’t shown in release builds."
+"不具合の調査用に、監視中の様子 (マイク入力・中断・画面ロック・いびき判定の内訳) を記録しています。録音した音そのものは含みません。現在 {1}。この項目はリリース版では表示されません。": "For troubleshooting, what happens during monitoring (microphone input, interruptions, screen lock, and snore detection details) is logged. Recorded audio itself isn’t included. Current size: {1}. This section isn’t shown in release builds.",
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります": "Audio from another app is playing. The microphone also picks up that sound, so quiet snores may be missed. Turning the volume down makes them less likely to be missed."
 }

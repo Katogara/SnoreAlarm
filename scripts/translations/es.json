@@ -386,5 +386,6 @@
 "書き出したログを共有": "Compartir registro exportado",
 "診断ログを消去": "Borrar registro de diagnóstico",
 "診断 (開発用)": "Diagnóstico (desarrollo)",
-"不具合の調査用に、監視中の様子 (マイク入力・中断・画面ロック・いびき判定の内訳) を記録しています。録音した音そのものは含みません。現在 {1}。この項目はリリース版では表示されません。": "Para solucionar problemas se registra lo que ocurre durante la vigilancia (entrada del micrófono, interrupciones, bloqueo de pantalla y detalles de la detección de ronquidos). No incluye el audio grabado. Tamaño actual: {1}. Esta sección no aparece en las versiones publicadas."
+"不具合の調査用に、監視中の様子 (マイク入力・中断・画面ロック・いびき判定の内訳) を記録しています。録音した音そのものは含みません。現在 {1}。この項目はリリース版では表示されません。": "Para solucionar problemas se registra lo que ocurre durante la vigilancia (entrada del micrófono, interrupciones, bloqueo de pantalla y detalles de la detección de ronquidos). No incluye el audio grabado. Tamaño actual: {1}. Esta sección no aparece en las versiones publicadas.",
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります": "Otra app está reproduciendo sonido. El micrófono también capta ese sonido, por lo que pueden pasarse por alto ronquidos suaves. Bajar el volumen reduce este riesgo."
 }

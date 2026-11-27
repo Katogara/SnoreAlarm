@@ -386,5 +386,6 @@
 "書き出したログを共有": "Exportiertes Protokoll teilen",
 "診断ログを消去": "Diagnoseprotokoll löschen",
 "診断 (開発用)": "Diagnose (Entwicklung)",
-"不具合の調査用に、監視中の様子 (マイク入力・中断・画面ロック・いびき判定の内訳) を記録しています。録音した音そのものは含みません。現在 {1}。この項目はリリース版では表示されません。": "Zur Fehlersuche wird protokolliert, was während der Überwachung passiert (Mikrofoneingang, Unterbrechungen, Bildschirmsperre und Details der Schnarcherkennung). Aufgenommener Ton ist nicht enthalten. Aktuelle Größe: {1}. Dieser Abschnitt wird in Release-Versionen nicht angezeigt."
+"不具合の調査用に、監視中の様子 (マイク入力・中断・画面ロック・いびき判定の内訳) を記録しています。録音した音そのものは含みません。現在 {1}。この項目はリリース版では表示されません。": "Zur Fehlersuche wird protokolliert, was während der Überwachung passiert (Mikrofoneingang, Unterbrechungen, Bildschirmsperre und Details der Schnarcherkennung). Aufgenommener Ton ist nicht enthalten. Aktuelle Größe: {1}. Dieser Abschnitt wird in Release-Versionen nicht angezeigt.",
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります": "Eine andere App gibt Ton wieder. Das Mikrofon nimmt diesen Ton ebenfalls auf, daher kann leises Schnarchen überhört werden. Bei geringerer Lautstärke wird es seltener überhört."
 }
