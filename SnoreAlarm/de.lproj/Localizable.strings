@@ -92,7 +92,7 @@
 "いびき %lld 回" = "Schnarchen: %1$lld";
 "いびき (録音した回数)" = "Schnarchen (aufgenommen)";
 "いびきが続いたときに、どの端末の振動で知らせるかを選んでください。あとからメイン画面で切り替えられます。" = "Wähle, welches Gerät vibrieren soll, wenn das Schnarchen anhält. Du kannst das später auf dem Hauptbildschirm ändern.";
-"いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Nur die wenigen als Schnarchen erkannten Sekunden werden auf dem Gerät gespeichert und nach 1 Woche automatisch gelöscht. Etwa 12 KB pro Aufnahme.";
+"いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Jeweils wenige Sekunden von Schnarchen und schnarchähnlichen Geräuschen werden auf dem Gerät gespeichert und nach 1 Woche automatisch gelöscht. Etwa 12 KB pro Aufnahme.";
 "いびきに数えなかった物音" = "Nicht gezählte Geräusche";
 "いびきの合計" = "Schnarchen gesamt";
 "いびきの波形" = "Schnarch-Wellenform";
