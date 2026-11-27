@@ -92,7 +92,7 @@
 "いびき %lld 回" = "Roncos: %1$lld";
 "いびき (録音した回数)" = "Roncos (gravados)";
 "いびきが続いたときに、どの端末の振動で知らせるかを選んでください。あとからメイン画面で切り替えられます。" = "Escolha qual dispositivo vai vibrar quando o ronco continuar. Você pode trocar depois na tela principal.";
-"いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Só os poucos segundos considerados ronco são salvos no aparelho e apagados automaticamente após 1 semana. Cerca de 12 KB cada.";
+"いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Alguns segundos de cada ronco e de cada som parecido são salvos no aparelho e apagados automaticamente após 1 semana. Cerca de 12 KB cada.";
 "いびきに数えなかった物音" = "Ruídos não contados";
 "いびきの合計" = "Ronco total";
 "いびきの波形" = "Forma de onda do ronco";
