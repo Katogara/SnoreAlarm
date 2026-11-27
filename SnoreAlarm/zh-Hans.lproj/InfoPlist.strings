@@ -1,5 +1,5 @@
 /* zh-Hans の Info.plist の訳。scripts/build_strings.py で作る */
 
 "CFBundleDisplayName" = "打鼾提醒";
-"NSMicrophoneUsageDescription" = "麦克风用于在睡眠时检测打鼾。仅将判定为打鼾的几秒钟录在设备内（可在设置中关闭），并在 1 周后自动删除。不会发送到设备外。";
+"NSMicrophoneUsageDescription" = "麦克风用于在睡眠时检测打鼾。将判定为打鼾的声音和类似打鼾的声音各录几秒保存在设备内（可在设置中关闭），并在 1 周后自动删除。不会发送到设备外。";
 "NSAlarmKitUsageDescription" = "用于在睡觉时间尚未开始监测时，响起与时钟 App 相同的闹钟。";
