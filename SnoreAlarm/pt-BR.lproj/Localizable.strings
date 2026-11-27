@@ -389,3 +389,4 @@
 "高 (小さないびきも検知)" = "Alta (detecta também roncos leves)";
 "鳴らす時刻" = "Horário do alarme";
 "鳴らす時刻と自動終了に別の時刻を指定してください。" = "Defina horários diferentes para o alarme e o fim automático.";
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります" = "Outro app está reproduzindo som. O microfone também capta esse som, então roncos fracos podem passar despercebidos. Diminuir o volume reduz esse risco.";
