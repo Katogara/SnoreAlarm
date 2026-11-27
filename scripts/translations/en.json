@@ -361,7 +361,7 @@
 "寝付くまでの間は検知しないようにできます。": "You can skip detection while you’re falling asleep.",
 "いびきを録音する": "Record Snores",
 "録音": "Recording",
-"いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。": "Only the few seconds judged to be snoring are saved on the device and deleted automatically after 1 week. About 12 KB each.",
+"いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。": "A few seconds each of snoring and snore-like sounds are saved on the device and deleted automatically after 1 week. About 12 KB each.",
 "1日の区切り": "Day Boundary",
 "この時刻から翌日のこの時刻の前までに始めた監視を一晩としてまとめ、最初の開始から最後の終了までをグラフにします (初期値 12:00)。昼に眠る場合は、起きている時間帯の時刻にしてください。": "Monitoring sessions started between this time and the same time the next day are grouped as one night and graphed from the first start to the last end (default 12:00). If you sleep during the day, set a time when you’re usually awake.",
 "はじめの説明を見る": "View Introduction",

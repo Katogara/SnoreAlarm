@@ -361,7 +361,7 @@
 "寝付くまでの間は検知しないようにできます。": "Puedes evitar la detección mientras te duermes.",
 "いびきを録音する": "Grabar ronquidos",
 "録音": "Grabación",
-"いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。": "Solo se guardan en el dispositivo los pocos segundos considerados ronquido, y se eliminan automáticamente al cabo de 1 semana. Unos 12 KB cada uno.",
+"いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。": "Se guardan en el dispositivo unos segundos de cada ronquido y de cada sonido parecido, y se eliminan automáticamente al cabo de 1 semana. Unos 12 KB cada uno.",
 "1日の区切り": "Cambio de día",
 "この時刻から翌日のこの時刻の前までに始めた監視を一晩としてまとめ、最初の開始から最後の終了までをグラフにします (初期値 12:00)。昼に眠る場合は、起きている時間帯の時刻にしてください。": "Las sesiones de vigilancia iniciadas entre esta hora y la misma hora del día siguiente se agrupan como una noche y se representan desde el primer inicio hasta el último fin (por defecto 12:00). Si duermes de día, elige una hora en la que sueles estar despierto.",
 "はじめの説明を見る": "Ver introducción",
