@@ -1,5 +1,5 @@
 /* en の Info.plist の訳。scripts/build_strings.py で作る */
 
 "CFBundleDisplayName" = "Snore Alarm";
-"NSMicrophoneUsageDescription" = "The microphone is used to detect snoring while you sleep. Only the few seconds judged to be snoring are recorded on the device (you can turn this off in Settings) and deleted automatically after 1 week. Nothing is sent off the device.";
+"NSMicrophoneUsageDescription" = "The microphone is used to detect snoring while you sleep. A few seconds each of snoring and snore-like sounds are recorded on the device (you can turn this off in Settings) and deleted automatically after 1 week. Nothing is sent off the device.";
 "NSAlarmKitUsageDescription" = "Used to ring an alarm like the Clock app’s when it’s bedtime and monitoring hasn’t started.";

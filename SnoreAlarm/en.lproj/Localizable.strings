@@ -92,7 +92,7 @@
 "いびき %lld 回" = "Snores: %1$lld";
 "いびき (録音した回数)" = "Snores (Recorded)";
 "いびきが続いたときに、どの端末の振動で知らせるかを選んでください。あとからメイン画面で切り替えられます。" = "Choose which device should vibrate when snoring continues. You can change this later on the main screen.";
-"いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Only the few seconds judged to be snoring are saved on the device and deleted automatically after 1 week. About 12 KB each.";
+"いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "A few seconds each of snoring and snore-like sounds are saved on the device and deleted automatically after 1 week. About 12 KB each.";
 "いびきに数えなかった物音" = "Noises Not Counted";
 "いびきの合計" = "Total Snoring";
 "いびきの波形" = "Snore waveform";
