@@ -389,3 +389,4 @@
 "高 (小さないびきも検知)" = "Élevée (détecte aussi les ronflements légers)";
 "鳴らす時刻" = "Heure de l’alarme";
 "鳴らす時刻と自動終了に別の時刻を指定してください。" = "Réglez des heures différentes pour l’alarme et la fin auto.";
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります" = "Une autre app diffuse du son. Le micro capte aussi ce son, si bien que des ronflements faibles peuvent passer inaperçus. Baisser le volume réduit ce risque.";
