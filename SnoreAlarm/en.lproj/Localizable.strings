@@ -389,3 +389,4 @@
 "高 (小さないびきも検知)" = "High (detects quiet snores too)";
 "鳴らす時刻" = "Alarm Time";
 "鳴らす時刻と自動終了に別の時刻を指定してください。" = "Set different times for the alarm and auto end.";
+"ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります" = "Audio from another app is playing. The microphone also picks up that sound, so quiet snores may be missed. Turning the volume down makes them less likely to be missed.";
