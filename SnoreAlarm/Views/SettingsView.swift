@@ -89,7 +89,7 @@ struct SettingsView: View {
                 } header: {
                     Text("録音")
                 } footer: {
-                    PhraseText("いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。")
+                    PhraseText("いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。")
                 }
 
                 Section {
