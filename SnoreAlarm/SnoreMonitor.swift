@@ -120,6 +120,8 @@ final class SnoreMonitor {
     @ObservationIgnored private var healthTask: Task<Void, Never>?
     /// マイク入力が止まっていると判断してから、まだ再開できていない
     @ObservationIgnored private var inputStalled = false
+    /// ほかのアプリの音 (音楽・環境音など) が流れていることを、今回の監視のログに出した
+    @ObservationIgnored private var otherAudioNoticed = false
     /// 画面が見えなくなった時刻と、そのときのいびきの回数 (戻ったときに、その間の様子をログに出す)
     @ObservationIgnored private var backgroundSince: Date?
     @ObservationIgnored private var snoreCountAtBackground = 0
@@ -339,8 +341,18 @@ final class SnoreMonitor {
                 }
                 self.checkInput()
                 self.updatePause()
+                self.noticeOtherAudio()
             }
         }
+    }
+
+    /// ほかのアプリの音を流したまま監視しているときに、1 回だけログで知らせる。
+    /// 音は止めずに混ぜて監視する (`.mixWithOthers`) が、流している音もマイクに入り、周りの音の大きさに合わせて
+    /// いびきと判定する音量が上がるため、小さないびきを聞き逃しやすくなる
+    private func noticeOtherAudio() {
+        guard !otherAudioNoticed, AVAudioSession.sharedInstance().isOtherAudioPlaying else { return }
+        otherAudioNoticed = true
+        append(.info, "ほかのアプリの音が流れています。流している音もマイクに入るため、小さないびきを聞き逃すことがあります。音量を小さめにすると聞き逃しにくくなります")
     }
 
     /// 診断ログ用の現在の状態 (アプリ・画面ロック・オーディオセッション・マイク入力)
@@ -384,6 +396,7 @@ final class SnoreMonitor {
     }
 
     private func resetAlarmCounts() {
+        otherAudioNoticed = false
         snoreCount = 0
         noiseCount = 0
         pausedSoundCount = 0
