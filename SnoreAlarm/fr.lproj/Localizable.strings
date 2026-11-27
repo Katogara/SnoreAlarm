@@ -92,7 +92,7 @@
 "いびき %lld 回" = "Ronflements : %1$lld";
 "いびき (録音した回数)" = "Ronflements (enregistrés)";
 "いびきが続いたときに、どの端末の振動で知らせるかを選んでください。あとからメイン画面で切り替えられます。" = "Choisissez l’appareil qui doit vibrer quand les ronflements continuent. Vous pourrez le changer plus tard sur l’écran principal.";
-"いびきと判定した数秒間だけを端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Seules les quelques secondes jugées comme ronflement sont enregistrées sur l’appareil, puis supprimées automatiquement après 1 semaine. Environ 12 Ko chacune.";
+"いびきと判定した音と、いびきに似た音を数秒ずつ端末内に保存し、1週間で自動的に削除します。1回あたり約12KBです。" = "Quelques secondes de chaque ronflement et de chaque son semblable sont enregistrées sur l’appareil, puis supprimées automatiquement après 1 semaine. Environ 12 Ko chacune.";
 "いびきに数えなかった物音" = "Bruits non comptés";
 "いびきの合計" = "Total des ronflements";
 "いびきの波形" = "Forme d’onde du ronflement";

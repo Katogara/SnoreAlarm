@@ -1,5 +1,5 @@
 /* fr の Info.plist の訳。scripts/build_strings.py で作る */
 
 "CFBundleDisplayName" = "Alarme Ronflement";
-"NSMicrophoneUsageDescription" = "Le micro sert à détecter les ronflements pendant votre sommeil. Seules les quelques secondes jugées comme ronflement sont enregistrées sur l’appareil (désactivable dans Réglages) et supprimées automatiquement après 1 semaine. Rien ne quitte l’appareil.";
+"NSMicrophoneUsageDescription" = "Le micro sert à détecter les ronflements pendant votre sommeil. Quelques secondes de chaque ronflement et de chaque son semblable sont enregistrées sur l’appareil (désactivable dans Réglages) et supprimées automatiquement après 1 semaine. Rien ne quitte l’appareil.";
 "NSAlarmKitUsageDescription" = "Pour faire sonner une alarme comme celle de l’app Horloge à l’heure du coucher si la surveillance n’a pas démarré.";
